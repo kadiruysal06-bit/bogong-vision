@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bogong Vision — 3D Viewer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080810;--gold:#c8a96e;--gold-dim:rgba(200,169,110,0.12);
+  --text:#e8e4dc;--text-dim:rgba(232,228,220,0.45);--border:rgba(200,169,110,0.18);
+  --red:#e05555;--orange:#e07a35;
+}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;overflow:hidden;height:100vh;}
+
+/* Header */
+#header{position:fixed;top:0;left:0;right:0;z-index:100;height:48px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,8,16,0.95);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);}
+.logo-text{font-family:'Cormorant Garamond',serif;font-size:16px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;}
+.header-center{display:flex;gap:6px;align-items:center;}
+.view-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+.view-btn:hover,.view-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+.header-right{display:flex;gap:8px;align-items:center;}
+.hbtn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.hbtn:hover{border-color:var(--gold);color:var(--gold);}
+.hbtn.on{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+
+/* Layout */
+#workspace{position:fixed;top:48px;left:0;right:0;bottom:0;display:grid;gap:2px;background:#000;}
+
+/* Single panel */
+.panel{position:relative;background:var(--bg);overflow:hidden;}
+.panel-label{position:absolute;top:10px;left:12px;z-index:10;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);pointer-events:none;}
+.panel-badge{position:absolute;top:10px;right:12px;z-index:10;font-size:8px;letter-spacing:1px;color:var(--gold);opacity:0.6;pointer-events:none;}
+
+/* Grid lines bg */
+.panel::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(200,169,110,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(200,169,110,0.025) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;}
+
+canvas{display:block;width:100%;height:100%;}
+
+/* Colorbar */
+#colorbar{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;align-items:center;gap:5px;}
+#cbar-gradient{width:240px;height:8px;border-radius:2px;background:linear-gradient(to right,#0a1f5e,#1565c0,#29b6f6,#80cbc4,#a5d6a7,#fff176,#ffb74d,#ef5350,#b71c1c);}
+#cbar-labels{display:flex;justify-content:space-between;width:240px;font-size:7px;letter-spacing:1px;color:var(--text-dim);}
+
+/* Controls */
+#controls{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:6px;}
+.ctrl-btn{background:rgba(8,8,16,0.88);border:1px solid var(--border);color:var(--text-dim);padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;text-align:center;text-transform:uppercase;}
+.ctrl-btn:hover,.ctrl-btn.on{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+
+/* Sliders */
+#sliders{position:fixed;left:12px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:12px;}
+.sldr{display:flex;flex-direction:column;gap:4px;align-items:center;}
+.sldr label{font-size:7px;letter-spacing:2px;text-transform:uppercase;color:rgba(200,169,110,0.5);text-align:center;}
+.sldr input{writing-mode:vertical-lr;direction:rtl;width:20px;height:80px;accent-color:var(--gold);}
+.sldr span{font-size:9px;color:var(--gold);}
+
+/* Info panel */
+#info{position:fixed;bottom:46px;left:14px;z-index:50;display:flex;flex-direction:column;gap:4px;}
+.info-row{font-size:8px;letter-spacing:1px;color:var(--text-dim);}
+.info-val{color:var(--gold);}
+
+/* Anomaly markers */
+.anom-list{position:fixed;bottom:46px;right:60px;z-index:50;display:flex;flex-direction:column;gap:5px;max-width:180px;}
+.anom-item{background:rgba(8,8,16,0.88);border:1px solid;padding:6px 10px;font-size:8px;letter-spacing:1px;line-height:1.6;}
+.anom-item.HIGH{border-color:rgba(224,85,85,0.4);color:#e05555;}
+.anom-item.MEDIUM{border-color:rgba(224,122,53,0.4);color:#e07a35;}
+
+/* Upload overlay */
+#uploadOverlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(8,8,16,0.96);}
+#uploadOverlay.hidden{display:none;}
+.upload-box{border:1px solid var(--border);padding:60px 80px;text-align:center;max-width:500px;}
+.upload-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;letter-spacing:2px;color:var(--gold);margin-bottom:12px;}
+.upload-sub{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;line-height:2;margin-bottom:28px;}
+.upload-drop{border:1px dashed rgba(200,169,110,0.3);padding:30px;cursor:pointer;transition:all 0.3s;margin-bottom:16px;}
+.upload-drop:hover{border-color:rgba(200,169,110,0.6);background:var(--gold-dim);}
+.upload-btn-row{display:flex;gap:10px;justify-content:center;}
+.ubtn{background:transparent;border:1px solid var(--gold);color:var(--gold);padding:10px 24px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+.ubtn:hover{background:var(--gold-dim);}
+.ubtn.sec{border-color:var(--border);color:var(--text-dim);}
+.ubtn.sec:hover{border-color:var(--gold);color:var(--gold);}
+#uploadProgress{display:none;margin-top:16px;text-align:center;}
+#uploadProgress .loading-bar{width:200px;height:1px;background:var(--border);margin:0 auto 10px;position:relative;overflow:hidden;}
+#uploadProgress .loading-bar::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:var(--gold);animation:loadbar 1.5s ease infinite;}
+@keyframes loadbar{to{left:100%}}
+#uploadProgress .pt{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;}
+#fileInput2{display:none;}
+</style>
+</head>
+<body>
+
+<!-- Upload Overlay -->
+<div id="uploadOverlay">
+  <div class="upload-box">
+    <div class="upload-title">Bogong Vision</div>
+    <div class="upload-sub">3D Subsurface Intelligence<br>Upload ERT or GPR data to begin</div>
+    <div class="upload-drop" id="uploadDrop">
+      <svg width="36" height="36" viewBox="0 0 40 40" fill="none" style="margin-bottom:12px">
+        <rect x="8" y="12" width="24" height="20" rx="1" stroke="#c8a96e" stroke-width="0.8" opacity="0.5"/>
+        <line x1="20" y1="6" x2="20" y2="24" stroke="#c8a96e" stroke-width="0.8"/>
+        <polyline points="14,12 20,6 26,12" stroke="#c8a96e" stroke-width="0.8" fill="none"/>
+      </svg>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase">Drop file here or click to browse</div>
+      <div style="font-size:8px;letter-spacing:1px;color:rgba(200,169,110,0.4);margin-top:8px">.INV · .DAT · .SGY · .RD3</div>
+    </div>
+    <div id="uploadProgress">
+      <div class="loading-bar"></div>
+      <div class="pt" id="uploadPt">Uploading...</div>
+    </div>
+    <div class="upload-btn-row">
+      <button class="ubtn" id="browseBtn">Browse File</button>
+      <button class="ubtn sec" onclick="loadDemo()">Load Demo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<div id="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="14" stroke="#c8a96e" stroke-width="0.5" opacity="0.5"/>
+      <circle cx="16" cy="16" r="8" stroke="#c8a96e" stroke-width="0.5" opacity="0.7"/>
+      <circle cx="16" cy="16" r="3" stroke="#c8a96e" stroke-width="0.5"/>
+      <circle cx="16" cy="16" r="1.2" fill="#c8a96e"/>
+    </svg>
+    <div>
+      <div class="logo-text">Bogong Vision</div>
+    </div>
+    <span style="font-size:8px;letter-spacing:1px;color:var(--text-dim);margin-left:4px" id="fileLabel">—</span>
+  </div>
+  <div class="header-center">
+    <button class="view-btn active" id="v4" onclick="setLayout('quad')">4-Panel</button>
+    <button class="view-btn" id="v3d" onclick="setLayout('3d')">3D Only</button>
+    <button class="view-btn" id="v2d" onclick="setLayout('2d')">2D Section</button>
+    <button class="view-btn" id="vps" onclick="setLayout('pseudo')">Pseudosection</button>
+    <button class="view-btn" id="vpl" onclick="setLayout('plan')">Plan View</button>
+  </div>
+  <div class="header-right">
+    <button class="hbtn" id="autoBtn" onclick="toggleAuto()">Auto ▶</button>
+    <button class="hbtn" onclick="resetCamera()">Reset</button>
+    <button class="hbtn" onclick="document.getElementById('uploadOverlay').classList.remove('hidden')">Load File</button>
+    <button class="hbtn" onclick="window.location='/'">← Back</button>
+  </div>
+</div>
+
+<!-- Workspace -->
+<div id="workspace">
+  <div class="panel" id="panel3d">
+    <div class="panel-label">3D Resistivity Model</div>
+    <div class="panel-badge" id="badge3d">—</div>
+    <canvas id="canvas3d"></canvas>
+  </div>
+  <div class="panel" id="panel2d">
+    <div class="panel-label">2D Inverse Model Section</div>
+    <canvas id="canvas2d"></canvas>
+  </div>
+  <div class="panel" id="panelPs">
+    <div class="panel-label">Pseudosection</div>
+    <canvas id="canvasPs"></canvas>
+  </div>
+  <div class="panel" id="panelPlan">
+    <div class="panel-label">Plan View (Depth Slice)</div>
+    <canvas id="canvasPlan"></canvas>
+  </div>
+</div>
+
+<!-- Controls -->
+<div id="controls">
+  <button class="ctrl-btn" id="anomOnly" onclick="toggleAnomalyOnly()">Anomaly</button>
+  <button class="ctrl-btn on" onclick="toggleWireframe()">Grid</button>
+</div>
+
+<div id="sliders">
+  <div class="sldr">
+    <label>Depth×</label>
+    <input type="range" id="depthMult" min="1" max="8" step="0.5" value="3" oninput="updateDepth(this.value)">
+    <span id="depthVal">3.0</span>
+  </div>
+  <div class="sldr">
+    <label>Thresh</label>
+    <input type="range" id="threshSlider" min="0" max="500" step="10" value="100" oninput="updateThresh(this.value)">
+    <span id="threshVal">100</span>
+  </div>
+</div>
+
+<div id="colorbar">
+  <div id="cbar-gradient"></div>
+  <div id="cbar-labels">
+    <span>Low (water)</span><span>Medium</span><span>High (void)</span>
+  </div>
+</div>
+
+<div id="info">
+  <div class="info-row">Type: <span class="info-val" id="infoType">—</span></div>
+  <div class="info-row">Points: <span class="info-val" id="infoPoints">—</span></div>
+  <div class="info-row">Min Ωm: <span class="info-val" id="infoMin">—</span></div>
+  <div class="info-row">Max Ωm: <span class="info-val" id="infoMax">—</span></div>
+</div>
+
+<div class="anom-list" id="anomList"></div>
+
+<input type="file" id="fileInput2" accept=".inv,.dat,.sgy,.segy,.rd3">
+
+<script>
+const API = 'https://vision.bogongai.net';
+let DATA = null;
+let scene, camera, renderer, pointsMesh, bgMesh;
+let rotX=0.3, rotY=0.2, zoom=1, panX=0, panY=0;
+let isDrag=false, lastM={x:0,y:0};
+let autoRot=false, anomalyOnly=false, showGrid=true;
+let depthMult=3, thresh=100;
+let currentLayout='quad';
+let animFrame;
+
+// ── UPLOAD ──
+const uploadDrop = document.getElementById('uploadDrop');
+uploadDrop.addEventListener('click', () => document.getElementById('fileInput2').click());
+uploadDrop.addEventListener('dragover', e => { e.preventDefault(); uploadDrop.style.borderColor='rgba(200,169,110,0.6)'; });
+uploadDrop.addEventListener('dragleave', () => { uploadDrop.style.borderColor=''; });
+uploadDrop.addEventListener('drop', e => { e.preventDefault(); uploadDrop.style.borderColor=''; const f=e.dataTransfer.files[0]; if(f) uploadFile(f); });
+document.getElementById('browseBtn').addEventListener('click', () => document.getElementById('fileInput2').click());
+document.getElementById('fileInput2').addEventListener('change', e => { if(e.target.files[0]) uploadFile(e.target.files[0]); });
+
+async function uploadFile(file) {
+  document.getElementById('uploadProgress').style.display='block';
+  document.getElementById('uploadPt').textContent = 'Analyzing...';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('survey_type', 'auto');
+    const res = await fetch(`${API}/analyze`, {method:'POST', body:fd});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail||'Failed');
+    DATA = data;
+    document.getElementById('fileLabel').textContent = file.name;
+    document.getElementById('uploadOverlay').classList.add('hidden');
+    initViewer();
+  } catch(err) {
+    document.getElementById('uploadPt').textContent = '⚠ ' + err.message;
+  }
+}
+
+function loadDemo() {
+  // Demo veri — oluklucesme
+  document.getElementById('uploadPt').textContent = 'Loading demo...';
+  document.getElementById('uploadProgress').style.display='block';
+  fetch(`${API}/health`).then(() => {
+    DATA = DEMO_DATA;
+    document.getElementById('fileLabel').textContent = 'demo-oluklucesme.INV';
+    document.getElementById('uploadOverlay').classList.add('hidden');
+    initViewer();
+  }).catch(() => {
+    document.getElementById('uploadPt').textContent = '⚠ API unavailable';
+  });
+}
+
+// ── INIT ──
+function initViewer() {
+  updateInfoPanel();
+  updateAnomalyList();
+  initThree();
+  draw2D();
+  drawPseudo();
+  drawPlan();
+  setLayout('quad');
+  animate();
+}
+
+function updateInfoPanel() {
+  if(!DATA) return;
+  document.getElementById('infoType').textContent = DATA.type||'—';
+  document.getElementById('infoPoints').textContent = (DATA.points||DATA.traces||0).toLocaleString();
+  document.getElementById('infoMin').textContent = DATA.min_res?DATA.min_res.toFixed(1):'—';
+  document.getElementById('infoMax').textContent = DATA.max_res?Math.round(DATA.max_res).toLocaleString():'—';
+  document.getElementById('badge3d').textContent = DATA.anomalies?`${DATA.anomalies.length} anomalies`:'—';
+}
+
+function updateAnomalyList() {
+  if(!DATA||!DATA.anomalies) return;
+  const list = document.getElementById('anomList');
+  list.innerHTML = DATA.anomalies.slice(0,5).map(a => `
+    <div class="anom-item ${a.severity}">
+      ${a.severity} · ${a.type||'Anomaly'}<br>
+      x=${a.x}m · d=${a.depth?a.depth.toFixed(1):'?'}m<br>
+      ${a.res?Math.round(a.res).toLocaleString()+' Ωm':''}
+    </div>`).join('');
+}
+
+// ── THREE.JS ──
+function initThree() {
+  const canvas = document.getElementById('canvas3d');
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setClearColor(0x080810);
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x080810, 0.006);
+  camera = new THREE.PerspectiveCamera(45, canvas.clientWidth/canvas.clientHeight, 0.1, 2000);
+  camera.position.set(0, 35, 120);
+  camera.lookAt(0,-10,0);
+  scene.add(new THREE.AmbientLight(0x1a1a2e, 3));
+  const dl = new THREE.DirectionalLight(0xffffff, 1.2);
+  dl.position.set(50,80,50); scene.add(dl);
+  buildScene();
+  setupControls();
+}
+
+function resColor(res, minR, maxR) {
+  const logMin=Math.log10(Math.max(minR,1));
+  const logMax=Math.log10(Math.max(maxR,1));
+  const v=(Math.log10(Math.max(res,1))-logMin)/(logMax-logMin||1);
+  if(v<0.15) return new THREE.Color(0.04+0.04*(v/0.15), 0.12+0.28*(v/0.15), 0.37+0.43*(v/0.15));
+  if(v<0.3){const t=(v-0.15)/0.15;return new THREE.Color(0.08+0.08*t,0.4+0.38*t,0.8-0.3*t);}
+  if(v<0.45){const t=(v-0.3)/0.15;return new THREE.Color(0.16+0.47*t,0.78+0.07*t,0.5-0.19*t);}
+  if(v<0.6){const t=(v-0.45)/0.15;return new THREE.Color(0.63+0.35*t,0.85-0.38*t,0.31-0.24*t);}
+  if(v<0.75){const t=(v-0.6)/0.15;return new THREE.Color(0.98-0.04*t,0.47-0.34*t,0.07+0.13*t);}
+  if(v<0.9){const t=(v-0.75)/0.15;return new THREE.Color(0.94-0.23*t,0.13-0.07*t,0.2+0.08*t);}
+  const t=(v-0.9)/0.1;return new THREE.Color(0.71-0.3*t,0.06+0.04*t,0.28+0.32*t);
+}
+
+function buildScene() {
+  scene.children.filter(c=>c.isPoints||c.isLine).forEach(c=>scene.remove(c));
+  if(!DATA||!DATA.grid) return;
+  const grid=DATA.grid;
+  const isERT = DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
+  if(!isERT) return;
+  const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);
+  const minX=Math.min(...xs),maxX=Math.max(...xs);
+  const minD=Math.min(...depths),maxD=Math.max(...depths);
+  const minR=DATA.min_res||Math.min(...ress);
+  const maxR=DATA.max_res||Math.max(...ress);
+  const W=160,H=60;
+  const pos=[],col=[],bPos=[],bCol=[];
+  grid.forEach(([x,d,r])=>{
+    if(anomalyOnly&&r<thresh) return;
+    const px=((x-minX)/(maxX-minX||1))*W-W/2;
+    const py=-(d/maxD)*H*depthMult*0.4;
+    const c=resColor(r,minR,maxR);
+    if(r>=thresh){pos.push(px,py,0);col.push(c.r,c.g,c.b);}
+    else{bPos.push(px,py,0);bCol.push(c.r,c.g,c.b);}
+  });
+  if(pos.length){
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+    pointsMesh=new THREE.Points(geo,new THREE.PointsMaterial({size:2,vertexColors:true,transparent:true,opacity:0.95,sizeAttenuation:true}));
+    scene.add(pointsMesh);
+  }
+  if(!anomalyOnly&&bPos.length){
+    const bGeo=new THREE.BufferGeometry();
+    bGeo.setAttribute('position',new THREE.Float32BufferAttribute(bPos,3));
+    bGeo.setAttribute('color',new THREE.Float32BufferAttribute(bCol,3));
+    bgMesh=new THREE.Points(bGeo,new THREE.PointsMaterial({size:1.4,vertexColors:true,transparent:true,opacity:0.75,sizeAttenuation:true}));
+    scene.add(bgMesh);
+  }
+  // Surface line
+  scene.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-W/2,0,0),new THREE.Vector3(W/2,0,0)]),
+    new THREE.LineBasicMaterial({color:0xc8a96e,transparent:true,opacity:0.4})
+  ));
+  // Grid lines
+  if(showGrid){
+    for(let x=0;x<=maxX-minX;x+=20){
+      const px=((x)/(maxX-minX||1))*W-W/2;
+      scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(px,1,0),new THREE.Vector3(px,-(H*depthMult*0.4+2),0)]),new THREE.LineBasicMaterial({color:0x111120,transparent:true,opacity:0.35})));
+    }
+  }
+  // Anomaly rings
+  if(DATA.anomalies) DATA.anomalies.forEach(a=>{
+    const px=((a.x-minX)/(maxX-minX||1))*W-W/2;
+    const py=-(a.depth/maxD)*H*depthMult*0.4;
+    const color=a.severity==='HIGH'?0xe05555:0xe07a35;
+    const ring=new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(Array.from({length:33},(_,i)=>{const ang=i/32*Math.PI*2;return new THREE.Vector3(px+Math.cos(ang)*3,py+Math.sin(ang)*1.5,0.2);})),
+      new THREE.LineBasicMaterial({color,transparent:true,opacity:0.8})
+    );
+    scene.add(ring);
+  });
+}
+
+// ── 2D Canvas ──
+function draw2D() {
+  const canvas = document.getElementById('canvas2d');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
+  ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
+  if(!DATA||!DATA.grid) return;
+  const grid=DATA.grid;
+  const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
+  if(!isERT) return;
+  const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);
+  const minX=Math.min(...xs),maxX=Math.max(...xs);
+  const minD=Math.min(...depths),maxD=Math.max(...depths);
+  const minR=DATA.min_res||Math.min(...ress);
+  const maxR=DATA.max_res||Math.max(...ress);
+  const PAD=30,plotW=W-PAD*2,plotH=H-PAD*2;
+  const pw=Math.max(3,(plotW/(maxX-minX+1))*2.8);
+  const ph=Math.max(3,(plotH/(maxD-minD+1))*8*depthMult*0.3);
+  grid.forEach(([x,d,r])=>{
+    const px=PAD+((x-minX)/(maxX-minX||1))*plotW;
+    const py=PAD+((d-minD)/(maxD-minD||1))*plotH;
+    const v=(Math.log10(Math.max(r,1))-Math.log10(Math.max(minR,1)))/(Math.log10(Math.max(maxR,1))-Math.log10(Math.max(minR,1))||1);
+    ctx.fillStyle=resColorCSS(v);
+    ctx.fillRect(px-pw/2,py-ph/2,pw,ph);
+  });
+  // Anomaly circles
+  if(DATA.anomalies) DATA.anomalies.forEach(a=>{
+    if(a.severity!=='HIGH') return;
+    const px=PAD+((a.x-minX)/(maxX-minX||1))*plotW;
+    const py=PAD+((a.depth-minD)/(maxD-minD||1))*plotH;
+    ctx.strokeStyle='#e05555'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2); ctx.stroke();
+  });
+  // Axes
+  ctx.strokeStyle='rgba(200,169,110,0.3)'; ctx.lineWidth=0.5;
+  ctx.beginPath(); ctx.moveTo(PAD,PAD); ctx.lineTo(PAD,H-PAD); ctx.lineTo(W-PAD,H-PAD); ctx.stroke();
+  // Labels
+  ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='8px JetBrains Mono'; ctx.textAlign='center';
+  [0,50,100,150,200].forEach(x=>{
+    const px=PAD+((x-minX)/(maxX-minX||1))*plotW;
+    if(px>=PAD&&px<=W-PAD) ctx.fillText(x+'m',px,H-PAD+14);
+  });
+  ctx.textAlign='right';
+  [5,15,25,35,45].forEach(d=>{
+    const py=PAD+((d-minD)/(maxD-minD||1))*plotH;
+    if(py>=PAD&&py<=H-PAD) ctx.fillText(d+'m',PAD-4,py+3);
+  });
+}
+
+function drawPseudo() {
+  const canvas = document.getElementById('canvasPs');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
+  ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
+  if(!DATA||!DATA.grid) return;
+  const grid=DATA.grid;
+  const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
+  if(!isERT) return;
+  const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);
+  const minX=Math.min(...xs),maxX=Math.max(...xs);
+  const minD=Math.min(...depths),maxD=Math.max(...depths);
+  const minR=DATA.min_res||Math.min(...ress);
+  const maxR=DATA.max_res||Math.max(...ress);
+  const PAD=20,plotW=W-PAD*2,plotH=H-PAD*2;
+  // Draw as pseudosection (triangular shape)
+  const layers = {};
+  grid.forEach(([x,d,r])=>{
+    if(!layers[d]) layers[d]=[];
+    layers[d].push([x,r]);
+  });
+  const layerKeys=Object.keys(layers).map(Number).sort((a,b)=>a-b);
+  const nLayers=layerKeys.length;
+  layerKeys.forEach((d,li)=>{
+    const pts=layers[d];
+    const rowH=plotH/nLayers;
+    const yCenter=PAD+li*rowH+rowH/2;
+    const shrink=li/nLayers;
+    const rowW=plotW*(1-shrink*0.5);
+    const xOff=PAD+(plotW-rowW)/2;
+    pts.forEach(([x,r])=>{
+      const px=xOff+((x-minX)/(maxX-minX||1))*rowW;
+      const v=(Math.log10(Math.max(r,1))-Math.log10(Math.max(minR,1)))/(Math.log10(Math.max(maxR,1))-Math.log10(Math.max(minR,1))||1);
+      ctx.fillStyle=resColorCSS(v);
+      ctx.fillRect(px-4,yCenter-3,8,6);
+    });
+  });
+  ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='center';
+  ctx.fillText('Pseudosection',W/2,H-4);
+}
+
+function drawPlan() {
+  const canvas = document.getElementById('canvasPlan');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
+  ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
+  if(!DATA||!DATA.grid) return;
+  const grid=DATA.grid;
+  const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
+  if(!isERT) return;
+  // Plan view: show top layer as color map
+  const topLayer=grid.filter(p=>p[1]<3);
+  const xs=topLayer.map(p=>p[0]),ress=topLayer.map(p=>p[2]);
+  const minX=Math.min(...xs),maxX=Math.max(...xs);
+  const minR=DATA.min_res||Math.min(...ress);
+  const maxR=DATA.max_res||Math.max(...ress);
+  const PAD=20,plotW=W-PAD*2,plotH=H-PAD*2;
+  const bw=Math.max(4,(plotW/(maxX-minX+1))*3);
+  topLayer.forEach(([x,d,r])=>{
+    const px=PAD+((x-minX)/(maxX-minX||1))*plotW;
+    const v=(Math.log10(Math.max(r,1))-Math.log10(Math.max(minR,1)))/(Math.log10(Math.max(maxR,1))-Math.log10(Math.max(minR,1))||1);
+    ctx.fillStyle=resColorCSS(v);
+    ctx.fillRect(px-bw/2,PAD,bw,plotH);
+  });
+  // Anomaly markers
+  if(DATA.anomalies) DATA.anomalies.forEach(a=>{
+    const px=PAD+((a.x-minX)/(maxX-minX||1))*plotW;
+    ctx.strokeStyle=a.severity==='HIGH'?'#e05555':'#e07a35';
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(px,PAD); ctx.lineTo(px,H-PAD);
+    ctx.stroke();
+    ctx.fillStyle=ctx.strokeStyle; ctx.font='7px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText(`${a.x}m`,px,PAD-3);
+  });
+  ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='center';
+  ctx.fillText('Surface Plan View',W/2,H-4);
+}
+
+function resColorCSS(v) {
+  if(v<0.15) return `rgb(${Math.round(10+20*v)},${Math.round(30+120*v)},${Math.round(100+155*v)})`;
+  if(v<0.3){const t=(v-0.15)/0.15;return `rgb(${Math.round(20+100*t)},${Math.round(150+100*t)},${Math.round(250-70*t)})`;}
+  if(v<0.45){const t=(v-0.3)/0.15;return `rgb(${Math.round(120+155*t)},${Math.round(250-50*t)},${Math.round(180-130*t)})`;}
+  if(v<0.6){const t=(v-0.45)/0.15;return `rgb(${Math.round(275-50*t)},${Math.round(200-120*t)},${Math.round(50+30*t)})`;}
+  if(v<0.8){const t=(v-0.6)/0.2;return `rgb(${Math.round(225-30*t)},${Math.round(80-60*t)},${Math.round(80+30*t)})`;}
+  return `rgb(${Math.round(195-50*v)},${Math.round(20+10*v)},${Math.round(110+40*v)})`;
+}
+
+// ── LAYOUT ──
+function setLayout(layout) {
+  currentLayout=layout;
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('v'+layout.replace('quad','4').replace('3d','3d').replace('2d','2d').replace('pseudo','ps').replace('plan','pl')).classList.add('active');
+  const ws=document.getElementById('workspace');
+  const p3d=document.getElementById('panel3d');
+  const p2d=document.getElementById('panel2d');
+  const pPs=document.getElementById('panelPs');
+  const pPl=document.getElementById('panelPlan');
+  const show=el=>{el.style.display='block';};
+  const hide=el=>{el.style.display='none';};
+  [p3d,p2d,pPs,pPl].forEach(show);
+  if(layout==='quad'){
+    ws.style.gridTemplateColumns='1fr 1fr';
+    ws.style.gridTemplateRows='1fr 1fr';
+  } else if(layout==='3d'){
+    ws.style.gridTemplateColumns='1fr'; ws.style.gridTemplateRows='1fr';
+    [p2d,pPs,pPl].forEach(hide);
+  } else if(layout==='2d'){
+    ws.style.gridTemplateColumns='1fr'; ws.style.gridTemplateRows='1fr';
+    [p3d,pPs,pPl].forEach(hide);
+    draw2D();
+  } else if(layout==='pseudo'){
+    ws.style.gridTemplateColumns='1fr'; ws.style.gridTemplateRows='1fr';
+    [p3d,p2d,pPl].forEach(hide);
+    drawPseudo();
+  } else if(layout==='plan'){
+    ws.style.gridTemplateColumns='1fr'; ws.style.gridTemplateRows='1fr';
+    [p3d,p2d,pPs].forEach(hide);
+    drawPlan();
+  }
+  resizeRenderer();
+}
+
+function resizeRenderer(){
+  if(!renderer) return;
+  const canvas=document.getElementById('canvas3d');
+  const w=canvas.clientWidth, h=canvas.clientHeight;
+  if(w>0&&h>0){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+}
+
+// ── CONTROLS ──
+function setupControls(){
+  const canvas=document.getElementById('canvas3d');
+  canvas.addEventListener('mousedown',e=>{isDrag=true;lastM={x:e.clientX,y:e.clientY};});
+  window.addEventListener('mouseup',()=>isDrag=false);
+  window.addEventListener('mousemove',e=>{
+    if(!isDrag)return;
+    const dx=e.clientX-lastM.x,dy=e.clientY-lastM.y;
+    if(e.shiftKey){panX+=dx*0.08;panY-=dy*0.08;}
+    else{rotY+=dx*0.007;rotX+=dy*0.007;rotX=Math.max(-1.5,Math.min(1.5,rotX));}
+    lastM={x:e.clientX,y:e.clientY};
+  });
+  canvas.addEventListener('wheel',e=>{zoom*=e.deltaY>0?1.08:0.93;zoom=Math.max(0.2,Math.min(6,zoom));});
+  let lastT=null;
+  canvas.addEventListener('touchstart',e=>{lastT=e.touches[0];e.preventDefault();},{passive:false});
+  canvas.addEventListener('touchmove',e=>{if(!lastT)return;const t=e.touches[0];rotY+=(t.clientX-lastT.clientX)*0.009;rotX+=(t.clientY-lastT.clientY)*0.009;lastT=t;e.preventDefault();},{passive:false});
+}
+
+function resetCamera(){rotX=0.3;rotY=0.2;zoom=1;panX=0;panY=0;}
+function toggleAuto(){autoRot=!autoRot;document.getElementById('autoBtn').textContent=autoRot?'Auto ⏹':'Auto ▶';document.getElementById('autoBtn').classList.toggle('on',autoRot);}
+function toggleAnomalyOnly(){anomalyOnly=!anomalyOnly;document.getElementById('anomOnly').classList.toggle('on',anomalyOnly);buildScene();}
+function toggleWireframe(){showGrid=!showGrid;buildScene();}
+function updateDepth(v){depthMult=parseFloat(v);document.getElementById('depthVal').textContent=parseFloat(v).toFixed(1);buildScene();draw2D();drawPseudo();}
+function updateThresh(v){thresh=parseFloat(v);document.getElementById('threshVal').textContent=v;buildScene();}
+
+// ── ANIMATE ──
+function animate(){
+  animFrame=requestAnimationFrame(animate);
+  if(!renderer||!scene||!camera)return;
+  if(autoRot) rotY+=0.004;
+  scene.children.forEach(obj=>{obj.rotation.y=rotY;obj.rotation.x=rotX;});
+  camera.position.set(panX,35*zoom+panY,120*zoom);
+  camera.lookAt(panX,panY-10,0);
+  resizeRenderer();
+  renderer.render(scene,camera);
+}
+
+window.addEventListener('resize',()=>{resizeRenderer();draw2D();drawPseudo();drawPlan();});
+
+// ── DEMO DATA ──
+const DEMO_DATA = {
+  "type":"ERT_INV","layers":16,"points":1017,
+  "min_res":9.6349,"max_res":13487,
+  "grid":[[7.5,1.25,14.22],[10,1.25,18.29],[12.5,1.25,19.81],[15,1.25,20.93],[17.5,1.25,23.62],[20,1.25,21.75],[27.5,1.25,60.95],[32.5,1.25,50.56],[37.5,1.25,47.24],[42.5,1.25,44.3],[47.5,1.25,31.87],[55,1.25,22.58],[60,1.25,23.15],[67.5,1.25,11.4],[70,1.25,10.84],[72.5,1.25,9.78],[80,1.25,15.47],[90,1.25,17.67],[97.5,1.25,24.59],[107.5,1.25,18.93],[115,1.25,26.04],[120,1.25,30.28],[130,1.25,20.82],[140,1.25,22.75],[150,1.25,18.8],[160,1.25,34.58],[170,1.25,32.81],[180,1.25,83.37],[190,1.25,160.9],[195,1.25,159.58],[200,1.25,118.56],[210,1.25,95.77],[220,1.25,44.77],[227.5,1.25,30.22],[7.5,4.14,13487],[10,4.14,220.11],[12.5,4.14,22.09],[17.5,4.14,19.43],[22.5,4.14,17.77],[27.5,4.14,18.21],[37.5,4.14,18.65],[47.5,4.14,18.48],[57.5,4.14,15.63],[67.5,4.14,11.39],[72.5,4.14,9.92],[80,4.14,16.21],[90,4.14,35.35],[100,4.14,31.61],[110,4.14,50.66],[115,4.14,62.27],[120,4.14,62.07],[125,4.14,62.23],[130,4.14,52.33],[140,4.14,34.39],[150,4.14,30.5],[160,4.14,32.36],[170,4.14,32.56],[180,4.14,52.32],[190,4.14,76.54],[195,4.14,120.14],[200,4.14,117.42],[210,4.14,102.34],[220,4.14,43.11],[10,5.8,13421],[12.5,5.8,404.24],[17.5,5.8,16.71],[22.5,5.8,16.82],[27.5,5.8,17.63],[37.5,5.8,18.5],[47.5,5.8,18.32],[57.5,5.8,15.55],[67.5,5.8,11.46],[72.5,5.8,10.92],[80,5.8,39.15],[90,5.8,101.64],[100,5.8,100.61],[110,5.8,172.2],[115,5.8,241.82],[120,5.8,243.72],[125,5.8,243.06],[130,5.8,202.68],[140,5.8,70.72],[150,5.8,45.45],[160,5.8,33.2],[170,5.8,45.83],[180,5.8,42.17],[190,5.8,41.98],[200,5.8,98.96],[210,5.8,55.7],[17.5,7.63,406.42],[25,7.63,16.99],[35,7.63,18.36],[45,7.63,18.44],[55,7.63,15.79],[65,7.63,16.08],[72.5,7.63,17.52],[80,7.63,102.87],[85,7.63,131.68],[90,7.63,131.78],[100,7.63,127.26],[110,7.63,185.49],[115,7.63,262.66],[120,7.63,268.74],[125,7.63,267.72],[130,7.63,229.68],[140,7.63,99.64],[150,7.63,65.11],[160,7.63,49.95],[170,7.63,52.89],[180,7.63,42.05],[190,7.63,40.32],[200,7.63,54.28],[20,9.64,400.71],[30,9.64,22.21],[40,9.64,21.42],[50,9.64,19.62],[60,9.64,19.29],[70,9.64,28.91],[80,9.64,120.44],[85,9.64,132.65],[90,9.64,132.11],[100,9.64,127.64],[110,9.64,185.58],[115,9.64,262.8],[120,9.64,268.9],[125,9.64,267.9],[130,9.64,229.92],[140,9.64,100.07],[150,9.64,67.53],[160,9.64,58.48],[170,9.64,58.1],[180,9.64,42.11],[190,9.64,40.32],[200,9.64,52.12],[30,11.86,44.53],[40,11.86,35.35],[50,11.86,31.17],[60,11.86,31.11],[70,11.86,46.73],[80,11.86,120.63],[85,11.86,132.57],[90,11.86,131.94],[100,11.86,127.49],[110,11.86,181.12],[115,11.86,253.76],[120,11.86,260.81],[125,11.86,260.09],[130,11.86,226.53],[140,11.86,100.02],[150,11.86,67.52],[160,11.86,60.07],[170,11.86,59.54],[180,11.86,43.1],[190,11.86,40.55],[200,11.86,52.1],[40,14.29,48.81],[50,14.29,45.04],[60,14.29,44.95],[70,14.29,56.1],[80,14.29,119.9],[85,14.29,129.81],[90,14.29,129.11],[100,14.29,124.5],[110,14.29,147.49],[115,14.29,171.87],[120,14.29,173.69],[125,14.29,173.36],[130,14.29,166.2],[140,14.29,97.88],[150,14.29,67.16],[160,14.29,60.25],[170,14.29,59.9],[180,14.29,48.87],[190,14.29,44.81],[50,16.97,53.46],[60,16.97,53.37],[70,16.97,58.85],[80,16.97,101.87],[85,16.97,103.47],[90,16.97,101.73],[100,16.97,77.42],[110,16.97,70.59],[120,16.97,69.62],[130,16.97,68.89],[140,16.97,68.58],[150,16.97,65.03],[160,16.97,60.22],[170,16.97,60.2],[180,16.97,57.05],[190,16.97,54.56],[60,19.92,57.04],[70,19.92,59.42],[80,19.92,77.35],[85,19.92,77.17],[90,19.92,71.35],[100,19.92,48.19],[110,19.92,43.21],[120,19.92,42.98],[130,19.92,43.37],[140,19.92,49.49],[150,19.92,57.66],[160,19.92,59.51],[170,19.92,60.68],[180,19.92,61.55],[190,19.92,63.64],[70,23.16,59.49],[80,23.16,63.67],[85,23.16,63.31],[90,23.16,59.22],[100,23.16,42.96],[110,23.16,39.14],[120,23.16,39.04],[130,23.16,39.93],[140,23.16,44.22],[150,23.16,52.39],[160,23.16,58.21],[170,23.16,61.13],[80,26.73,59.79],[85,26.73,58.96],[90,26.73,54.27],[100,26.73,42.62],[110,26.73,39.01],[120,26.73,38.92],[130,26.73,39.84],[140,26.73,43.45],[150,26.73,50.26],[160,26.73,57.28],[170,26.73,61.29],[85,30.65,57.79],[90,30.65,53.3],[100,30.65,42.6],[110,30.65,39.02],[120,30.65,38.92],[130,30.65,39.87],[140,30.65,43.38],[150,30.65,49.44],[160,30.65,56.15],[90,34.97,52.01],[100,34.97,42.7],[110,34.97,39.15],[120,34.97,39.09],[130,34.97,40.13],[140,34.97,43.43],[150,34.97,48.92],[100,39.72,43.08],[110,39.72,39.74],[120,39.72,39.66],[130,39.72,40.98],[140,39.72,43.88],[100,44.94,49.8],[110,44.94,41.78],[120,44.94,40.59],[130,44.94,43.86]],
+  "anomalies":[{"x":7.5,"depth":4.1375,"res":13487,"severity":"HIGH","type":"Cavity/Void"},{"x":10,"depth":5.80125,"res":13421,"severity":"HIGH","type":"Cavity/Void"},{"x":17.5,"depth":7.63137,"res":406.42,"severity":"MEDIUM","type":"Resistive structure"},{"x":12.5,"depth":5.80125,"res":404.24,"severity":"MEDIUM","type":"Resistive structure"},{"x":120,"depth":7.63137,"res":268.74,"severity":"MEDIUM","type":"Resistive structure"}]
+};
+</script>
+</body>
+</html>

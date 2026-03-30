@@ -236,7 +236,7 @@ input[type="file"] { display:none; }
     <div class="actions-row">
       <button class="action-btn primary" id="downloadBtn">↓ JSON</button>
       <button class="action-btn" onclick="alert('PDF — coming soon')">⊞ PDF</button>
-      <button class="action-btn" onclick="window.open('viewer.html','_blank')">◈ 3D</button>
+      <button class="action-btn" onclick="if(analysisResult){localStorage.setItem('bogong_vision_result',JSON.stringify(analysisResult));window.open('viewer.html','_blank');}else{alert('Please analyze a file first')}">◈ 3D</button>
     </div>
   </div>
 </main>

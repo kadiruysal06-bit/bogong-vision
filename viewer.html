@@ -8,126 +8,105 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-:root{
-  --bg:#080810;--gold:#c8a96e;--gold-dim:rgba(200,169,110,0.12);
-  --text:#e8e4dc;--text-dim:rgba(232,228,220,0.45);--border:rgba(200,169,110,0.18);
-  --red:#e05555;--orange:#e07a35;
-}
+:root{--bg:#080810;--gold:#c8a96e;--gold-dim:rgba(200,169,110,0.12);--text:#e8e4dc;--text-dim:rgba(232,228,220,0.45);--border:rgba(200,169,110,0.18);--red:#e05555;--orange:#e07a35;}
 body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;overflow:hidden;height:100vh;}
 
-/* Header */
-#header{position:fixed;top:0;left:0;right:0;z-index:100;height:48px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,8,16,0.95);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);}
-.logo-text{font-family:'Cormorant Garamond',serif;font-size:16px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;}
-.header-center{display:flex;gap:6px;align-items:center;}
-.view-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+#header{position:fixed;top:0;left:0;right:0;z-index:100;height:46px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,8,16,0.95);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);}
+.logo-text{font-family:'Cormorant Garamond',serif;font-size:15px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;}
+.header-center{display:flex;gap:5px;}
+.view-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:5px 11px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
 .view-btn:hover,.view-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
-.header-right{display:flex;gap:8px;align-items:center;}
-.hbtn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.header-right{display:flex;gap:6px;}
+.hbtn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:5px 9px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
 .hbtn:hover{border-color:var(--gold);color:var(--gold);}
 .hbtn.on{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
 
-/* Layout */
-#workspace{position:fixed;top:48px;left:0;right:0;bottom:0;display:grid;gap:2px;background:#000;}
-
-/* Single panel */
+#workspace{position:fixed;top:46px;left:0;right:0;bottom:0;display:grid;gap:2px;background:#000;}
 .panel{position:relative;background:var(--bg);overflow:hidden;}
-.panel-label{position:absolute;top:10px;left:12px;z-index:10;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);pointer-events:none;}
-.panel-badge{position:absolute;top:10px;right:12px;z-index:10;font-size:8px;letter-spacing:1px;color:var(--gold);opacity:0.6;pointer-events:none;}
-
-/* Grid lines bg */
-.panel::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(200,169,110,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(200,169,110,0.025) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;}
-
+.panel-label{position:absolute;top:8px;left:10px;z-index:10;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);pointer-events:none;}
+.panel::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(200,169,110,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(200,169,110,0.02) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;}
 canvas{display:block;width:100%;height:100%;}
 
-/* Colorbar */
-#colorbar{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:50;display:flex;flex-direction:column;align-items:center;gap:5px;}
-#cbar-gradient{width:240px;height:8px;border-radius:2px;background:linear-gradient(to right,#0a1f5e,#1565c0,#29b6f6,#80cbc4,#a5d6a7,#fff176,#ffb74d,#ef5350,#b71c1c);}
-#cbar-labels{display:flex;justify-content:space-between;width:240px;font-size:7px;letter-spacing:1px;color:var(--text-dim);}
-
-/* Controls */
-#controls{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:6px;}
-.ctrl-btn{background:rgba(8,8,16,0.88);border:1px solid var(--border);color:var(--text-dim);padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;text-align:center;text-transform:uppercase;}
+/* Controls - top right of 3D panel */
+#controls{position:fixed;right:14px;top:60px;z-index:50;display:flex;flex-direction:column;gap:5px;}
+.ctrl-btn{background:rgba(8,8,16,0.9);border:1px solid var(--border);color:var(--text-dim);padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;text-align:center;text-transform:uppercase;min-width:70px;}
 .ctrl-btn:hover,.ctrl-btn.on{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
 
-/* Sliders */
-#sliders{position:fixed;left:12px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:12px;}
+/* Sliders - left side */
+#sliders{position:fixed;left:10px;top:60px;z-index:50;display:flex;flex-direction:column;gap:12px;}
 .sldr{display:flex;flex-direction:column;gap:4px;align-items:center;}
 .sldr label{font-size:7px;letter-spacing:2px;text-transform:uppercase;color:rgba(200,169,110,0.5);text-align:center;}
 .sldr input{writing-mode:vertical-lr;direction:rtl;width:20px;height:80px;accent-color:var(--gold);}
 .sldr span{font-size:9px;color:var(--gold);}
 
-/* Info panel */
-#info{position:fixed;bottom:46px;left:14px;z-index:50;display:flex;flex-direction:column;gap:4px;}
+/* Colorbar - bottom center */
+#colorbar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:50;}
+#cbar-gradient{width:220px;height:7px;border-radius:2px;background:linear-gradient(to right,#0a1f5e,#1565c0,#29b6f6,#80cbc4,#a5d6a7,#fff176,#ffb74d,#ef5350,#b71c1c);margin-bottom:4px;}
+#cbar-labels{display:flex;justify-content:space-between;width:220px;font-size:7px;letter-spacing:1px;color:var(--text-dim);}
+
+/* Info - bottom left */
+#info{position:fixed;bottom:40px;left:60px;z-index:50;display:flex;flex-direction:column;gap:3px;}
 .info-row{font-size:8px;letter-spacing:1px;color:var(--text-dim);}
 .info-val{color:var(--gold);}
 
-/* Anomaly markers */
-.anom-list{position:fixed;bottom:46px;right:60px;z-index:50;display:flex;flex-direction:column;gap:5px;max-width:180px;}
-.anom-item{background:rgba(8,8,16,0.88);border:1px solid;padding:6px 10px;font-size:8px;letter-spacing:1px;line-height:1.6;}
-.anom-item.HIGH{border-color:rgba(224,85,85,0.4);color:#e05555;}
-.anom-item.MEDIUM{border-color:rgba(224,122,53,0.4);color:#e07a35;}
+/* Anomaly list - bottom right, above colorbar */
+.anom-list{position:fixed;bottom:40px;right:14px;z-index:50;display:flex;flex-direction:column;gap:4px;max-width:170px;}
+.anom-item{background:rgba(8,8,16,0.9);border:1px solid;padding:5px 8px;font-size:7px;letter-spacing:1px;line-height:1.6;}
+.anom-item.HIGH{border-color:rgba(224,85,85,0.5);color:#e05555;}
+.anom-item.MEDIUM{border-color:rgba(224,122,53,0.5);color:#e07a35;}
 
 /* Upload overlay */
-#uploadOverlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(8,8,16,0.96);}
+#uploadOverlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(8,8,16,0.97);}
 #uploadOverlay.hidden{display:none;}
-.upload-box{border:1px solid var(--border);padding:60px 80px;text-align:center;max-width:500px;}
-.upload-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;letter-spacing:2px;color:var(--gold);margin-bottom:12px;}
-.upload-sub{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;line-height:2;margin-bottom:28px;}
-.upload-drop{border:1px dashed rgba(200,169,110,0.3);padding:30px;cursor:pointer;transition:all 0.3s;margin-bottom:16px;}
+.upload-box{border:1px solid var(--border);padding:50px 70px;text-align:center;max-width:460px;}
+.upload-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;letter-spacing:2px;color:var(--gold);margin-bottom:10px;}
+.upload-sub{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;line-height:2;margin-bottom:24px;}
+.upload-drop{border:1px dashed rgba(200,169,110,0.3);padding:24px;cursor:pointer;transition:all 0.3s;margin-bottom:14px;}
 .upload-drop:hover{border-color:rgba(200,169,110,0.6);background:var(--gold-dim);}
 .upload-btn-row{display:flex;gap:10px;justify-content:center;}
-.ubtn{background:transparent;border:1px solid var(--gold);color:var(--gold);padding:10px 24px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+.ubtn{background:transparent;border:1px solid var(--gold);color:var(--gold);padding:9px 22px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
 .ubtn:hover{background:var(--gold-dim);}
 .ubtn.sec{border-color:var(--border);color:var(--text-dim);}
 .ubtn.sec:hover{border-color:var(--gold);color:var(--gold);}
-#uploadProgress{display:none;margin-top:16px;text-align:center;}
-#uploadProgress .loading-bar{width:200px;height:1px;background:var(--border);margin:0 auto 10px;position:relative;overflow:hidden;}
-#uploadProgress .loading-bar::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:var(--gold);animation:loadbar 1.5s ease infinite;}
+#uploadProgress{display:none;margin-top:14px;}
+.loading-bar{width:180px;height:1px;background:var(--border);margin:0 auto 8px;position:relative;overflow:hidden;}
+.loading-bar::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:var(--gold);animation:loadbar 1.5s ease infinite;}
 @keyframes loadbar{to{left:100%}}
-#uploadProgress .pt{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;}
+.pt{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;text-align:center;}
 #fileInput2{display:none;}
 </style>
 </head>
 <body>
 
-<!-- Upload Overlay -->
 <div id="uploadOverlay">
   <div class="upload-box">
-    <div class="upload-title">Bogong Vision</div>
-    <div class="upload-sub">3D Subsurface Intelligence<br>Upload ERT or GPR data to begin</div>
+    <div class="upload-title">Bogong Vision 3D</div>
+    <div class="upload-sub">Upload ERT or GPR data<br>to begin 3D visualization</div>
     <div class="upload-drop" id="uploadDrop">
-      <svg width="36" height="36" viewBox="0 0 40 40" fill="none" style="margin-bottom:12px">
+      <svg width="32" height="32" viewBox="0 0 40 40" fill="none" style="margin-bottom:10px;display:block;margin-left:auto;margin-right:auto">
         <rect x="8" y="12" width="24" height="20" rx="1" stroke="#c8a96e" stroke-width="0.8" opacity="0.5"/>
         <line x1="20" y1="6" x2="20" y2="24" stroke="#c8a96e" stroke-width="0.8"/>
         <polyline points="14,12 20,6 26,12" stroke="#c8a96e" stroke-width="0.8" fill="none"/>
       </svg>
-      <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase">Drop file here or click to browse</div>
-      <div style="font-size:8px;letter-spacing:1px;color:rgba(200,169,110,0.4);margin-top:8px">.INV · .DAT · .SGY · .RD3</div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase">Drop file or click to browse</div>
+      <div style="font-size:8px;letter-spacing:1px;color:rgba(200,169,110,0.35);margin-top:6px">.INV · .DAT · .SGY · .RD3</div>
     </div>
     <div id="uploadProgress">
       <div class="loading-bar"></div>
-      <div class="pt" id="uploadPt">Uploading...</div>
+      <div class="pt" id="uploadPt">Analyzing...</div>
     </div>
     <div class="upload-btn-row">
-      <button class="ubtn" id="browseBtn">Browse File</button>
+      <button class="ubtn" id="browseBtn">Browse</button>
       <button class="ubtn sec" onclick="loadDemo()">Load Demo</button>
     </div>
   </div>
 </div>
 
-<!-- Header -->
 <div id="header">
   <div style="display:flex;align-items:center;gap:10px">
-    <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-      <circle cx="16" cy="16" r="14" stroke="#c8a96e" stroke-width="0.5" opacity="0.5"/>
-      <circle cx="16" cy="16" r="8" stroke="#c8a96e" stroke-width="0.5" opacity="0.7"/>
-      <circle cx="16" cy="16" r="3" stroke="#c8a96e" stroke-width="0.5"/>
-      <circle cx="16" cy="16" r="1.2" fill="#c8a96e"/>
-    </svg>
-    <div>
-      <div class="logo-text">Bogong Vision</div>
-    </div>
-    <span style="font-size:8px;letter-spacing:1px;color:var(--text-dim);margin-left:4px" id="fileLabel">—</span>
+    <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="#c8a96e" stroke-width="0.5" opacity="0.5"/><circle cx="16" cy="16" r="7" stroke="#c8a96e" stroke-width="0.5" opacity="0.7"/><circle cx="16" cy="16" r="2.5" stroke="#c8a96e" stroke-width="0.5"/><circle cx="16" cy="16" r="1" fill="#c8a96e"/></svg>
+    <div class="logo-text">Bogong Vision</div>
+    <span style="font-size:8px;letter-spacing:1px;color:var(--text-dim)" id="fileLabel">—</span>
   </div>
   <div class="header-center">
     <button class="view-btn active" id="v4" onclick="setLayout('quad')">4-Panel</button>
@@ -144,31 +123,16 @@ canvas{display:block;width:100%;height:100%;}
   </div>
 </div>
 
-<!-- Workspace -->
 <div id="workspace">
-  <div class="panel" id="panel3d">
-    <div class="panel-label">3D Resistivity Model</div>
-    <div class="panel-badge" id="badge3d">—</div>
-    <canvas id="canvas3d"></canvas>
-  </div>
-  <div class="panel" id="panel2d">
-    <div class="panel-label">2D Inverse Model Section</div>
-    <canvas id="canvas2d"></canvas>
-  </div>
-  <div class="panel" id="panelPs">
-    <div class="panel-label">Pseudosection</div>
-    <canvas id="canvasPs"></canvas>
-  </div>
-  <div class="panel" id="panelPlan">
-    <div class="panel-label">Plan View (Depth Slice)</div>
-    <canvas id="canvasPlan"></canvas>
-  </div>
+  <div class="panel" id="panel3d"><div class="panel-label">3D Resistivity Model</div><canvas id="canvas3d"></canvas></div>
+  <div class="panel" id="panel2d"><div class="panel-label">2D Inverse Model Section</div><canvas id="canvas2d"></canvas></div>
+  <div class="panel" id="panelPs"><div class="panel-label">Apparent Resistivity Pseudosection</div><canvas id="canvasPs"></canvas></div>
+  <div class="panel" id="panelPlan"><div class="panel-label">Depth Slice — Layer 3 (~4m)</div><canvas id="canvasPlan"></canvas></div>
 </div>
 
-<!-- Controls -->
 <div id="controls">
-  <button class="ctrl-btn" id="anomOnly" onclick="toggleAnomalyOnly()">Anomaly</button>
-  <button class="ctrl-btn on" onclick="toggleWireframe()">Grid</button>
+  <button class="ctrl-btn" id="anomOnlyBtn" onclick="toggleAnomalyOnly()">Anomaly</button>
+  <button class="ctrl-btn on" id="gridBtn" onclick="toggleGrid()">Grid</button>
 </div>
 
 <div id="sliders">
@@ -186,32 +150,43 @@ canvas{display:block;width:100%;height:100%;}
 
 <div id="colorbar">
   <div id="cbar-gradient"></div>
-  <div id="cbar-labels">
-    <span>Low (water)</span><span>Medium</span><span>High (void)</span>
-  </div>
+  <div id="cbar-labels"><span>Low (water/clay)</span><span>Medium</span><span>High (void/rock)</span></div>
 </div>
 
 <div id="info">
   <div class="info-row">Type: <span class="info-val" id="infoType">—</span></div>
   <div class="info-row">Points: <span class="info-val" id="infoPoints">—</span></div>
-  <div class="info-row">Min Ωm: <span class="info-val" id="infoMin">—</span></div>
-  <div class="info-row">Max Ωm: <span class="info-val" id="infoMax">—</span></div>
+  <div class="info-row">Min: <span class="info-val" id="infoMin">—</span> Ωm</div>
+  <div class="info-row">Max: <span class="info-val" id="infoMax">—</span> Ωm</div>
 </div>
 
 <div class="anom-list" id="anomList"></div>
-
 <input type="file" id="fileInput2" accept=".inv,.dat,.sgy,.segy,.rd3">
 
 <script>
 const API = 'https://vision.bogongai.net';
 let DATA = null;
-let scene, camera, renderer, pointsMesh, bgMesh;
+let scene, camera, renderer;
 let rotX=0.3, rotY=0.2, zoom=1, panX=0, panY=0;
 let isDrag=false, lastM={x:0,y:0};
 let autoRot=false, anomalyOnly=false, showGrid=true;
 let depthMult=3, thresh=100;
-let currentLayout='quad';
-let animFrame;
+let gridLines=[];
+
+// ── LOAD FROM LOCALSTORAGE (from main page) ──
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('bogong_vision_result');
+  if(saved) {
+    try {
+      DATA = JSON.parse(saved);
+      document.getElementById('fileLabel').textContent = DATA.filename || 'loaded';
+      document.getElementById('uploadOverlay').classList.add('hidden');
+      initViewer();
+      return;
+    } catch(e) {}
+  }
+  // No data - show upload
+});
 
 // ── UPLOAD ──
 const uploadDrop = document.getElementById('uploadDrop');
@@ -242,17 +217,10 @@ async function uploadFile(file) {
 }
 
 function loadDemo() {
-  // Demo veri — oluklucesme
-  document.getElementById('uploadPt').textContent = 'Loading demo...';
-  document.getElementById('uploadProgress').style.display='block';
-  fetch(`${API}/health`).then(() => {
-    DATA = DEMO_DATA;
-    document.getElementById('fileLabel').textContent = 'demo-oluklucesme.INV';
-    document.getElementById('uploadOverlay').classList.add('hidden');
-    initViewer();
-  }).catch(() => {
-    document.getElementById('uploadPt').textContent = '⚠ API unavailable';
-  });
+  DATA = DEMO_DATA;
+  document.getElementById('fileLabel').textContent = 'demo-oluklucesme.INV';
+  document.getElementById('uploadOverlay').classList.add('hidden');
+  initViewer();
 }
 
 // ── INIT ──
@@ -273,16 +241,14 @@ function updateInfoPanel() {
   document.getElementById('infoPoints').textContent = (DATA.points||DATA.traces||0).toLocaleString();
   document.getElementById('infoMin').textContent = DATA.min_res?DATA.min_res.toFixed(1):'—';
   document.getElementById('infoMax').textContent = DATA.max_res?Math.round(DATA.max_res).toLocaleString():'—';
-  document.getElementById('badge3d').textContent = DATA.anomalies?`${DATA.anomalies.length} anomalies`:'—';
 }
 
 function updateAnomalyList() {
   if(!DATA||!DATA.anomalies) return;
-  const list = document.getElementById('anomList');
-  list.innerHTML = DATA.anomalies.slice(0,5).map(a => `
+  document.getElementById('anomList').innerHTML = DATA.anomalies.slice(0,4).map(a=>`
     <div class="anom-item ${a.severity}">
       ${a.severity} · ${a.type||'Anomaly'}<br>
-      x=${a.x}m · d=${a.depth?a.depth.toFixed(1):'?'}m<br>
+      x=${a.x}m · ${a.depth?a.depth.toFixed(1)+'m deep':''}<br>
       ${a.res?Math.round(a.res).toLocaleString()+' Ωm':''}
     </div>`).join('');
 }
@@ -290,26 +256,26 @@ function updateAnomalyList() {
 // ── THREE.JS ──
 function initThree() {
   const canvas = document.getElementById('canvas3d');
-  renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   renderer.setClearColor(0x080810);
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x080810, 0.006);
-  camera = new THREE.PerspectiveCamera(45, canvas.clientWidth/canvas.clientHeight, 0.1, 2000);
+  scene.fog = new THREE.FogExp2(0x080810, 0.005);
+  camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
   camera.position.set(0, 35, 120);
   camera.lookAt(0,-10,0);
   scene.add(new THREE.AmbientLight(0x1a1a2e, 3));
   const dl = new THREE.DirectionalLight(0xffffff, 1.2);
   dl.position.set(50,80,50); scene.add(dl);
   buildScene();
-  setupControls();
+  setupMouseControls();
 }
 
 function resColor(res, minR, maxR) {
   const logMin=Math.log10(Math.max(minR,1));
   const logMax=Math.log10(Math.max(maxR,1));
-  const v=(Math.log10(Math.max(res,1))-logMin)/(logMax-logMin||1);
-  if(v<0.15) return new THREE.Color(0.04+0.04*(v/0.15), 0.12+0.28*(v/0.15), 0.37+0.43*(v/0.15));
+  const v=Math.max(0,Math.min(1,(Math.log10(Math.max(res,1))-logMin)/(logMax-logMin||1)));
+  if(v<0.15){const t=v/0.15;return new THREE.Color(0.04+0.04*t,0.12+0.28*t,0.37+0.43*t);}
   if(v<0.3){const t=(v-0.15)/0.15;return new THREE.Color(0.08+0.08*t,0.4+0.38*t,0.8-0.3*t);}
   if(v<0.45){const t=(v-0.3)/0.15;return new THREE.Color(0.16+0.47*t,0.78+0.07*t,0.5-0.19*t);}
   if(v<0.6){const t=(v-0.45)/0.15;return new THREE.Color(0.63+0.35*t,0.85-0.38*t,0.31-0.24*t);}
@@ -319,235 +285,226 @@ function resColor(res, minR, maxR) {
 }
 
 function buildScene() {
-  scene.children.filter(c=>c.isPoints||c.isLine).forEach(c=>scene.remove(c));
+  // Remove old objects
+  const toRemove = scene.children.filter(c=>c.isPoints||c.isLine);
+  toRemove.forEach(c=>scene.remove(c));
+  gridLines=[];
   if(!DATA||!DATA.grid) return;
   const grid=DATA.grid;
-  const isERT = DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
+  const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
   if(!isERT) return;
   const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);
   const minX=Math.min(...xs),maxX=Math.max(...xs);
-  const minD=Math.min(...depths),maxD=Math.max(...depths);
+  const maxD=Math.max(...depths);
   const minR=DATA.min_res||Math.min(...ress);
   const maxR=DATA.max_res||Math.max(...ress);
-  const W=160,H=60;
+  const W=160;
   const pos=[],col=[],bPos=[],bCol=[];
   grid.forEach(([x,d,r])=>{
-    if(anomalyOnly&&r<thresh) return;
     const px=((x-minX)/(maxX-minX||1))*W-W/2;
-    const py=-(d/maxD)*H*depthMult*0.4;
+    const py=-(d/maxD)*60*depthMult*0.4;
     const c=resColor(r,minR,maxR);
-    if(r>=thresh){pos.push(px,py,0);col.push(c.r,c.g,c.b);}
+    if(anomalyOnly){if(r>=thresh){pos.push(px,py,0);col.push(c.r,c.g,c.b);}}
+    else if(r>=thresh){pos.push(px,py,0);col.push(c.r,c.g,c.b);}
     else{bPos.push(px,py,0);bCol.push(c.r,c.g,c.b);}
   });
   if(pos.length){
-    const geo=new THREE.BufferGeometry();
-    geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-    geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
-    pointsMesh=new THREE.Points(geo,new THREE.PointsMaterial({size:2,vertexColors:true,transparent:true,opacity:0.95,sizeAttenuation:true}));
-    scene.add(pointsMesh);
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+    scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:2.2,vertexColors:true,transparent:true,opacity:0.95,sizeAttenuation:true})));
   }
   if(!anomalyOnly&&bPos.length){
-    const bGeo=new THREE.BufferGeometry();
-    bGeo.setAttribute('position',new THREE.Float32BufferAttribute(bPos,3));
-    bGeo.setAttribute('color',new THREE.Float32BufferAttribute(bCol,3));
-    bgMesh=new THREE.Points(bGeo,new THREE.PointsMaterial({size:1.4,vertexColors:true,transparent:true,opacity:0.75,sizeAttenuation:true}));
-    scene.add(bgMesh);
+    const bg=new THREE.BufferGeometry();
+    bg.setAttribute('position',new THREE.Float32BufferAttribute(bPos,3));
+    bg.setAttribute('color',new THREE.Float32BufferAttribute(bCol,3));
+    scene.add(new THREE.Points(bg,new THREE.PointsMaterial({size:1.5,vertexColors:true,transparent:true,opacity:0.75,sizeAttenuation:true})));
   }
   // Surface line
-  scene.add(new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-W/2,0,0),new THREE.Vector3(W/2,0,0)]),
-    new THREE.LineBasicMaterial({color:0xc8a96e,transparent:true,opacity:0.4})
-  ));
+  const surf=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-W/2,0,0),new THREE.Vector3(W/2,0,0)]),new THREE.LineBasicMaterial({color:0xc8a96e,transparent:true,opacity:0.4}));
+  scene.add(surf);
   // Grid lines
-  if(showGrid){
-    for(let x=0;x<=maxX-minX;x+=20){
-      const px=((x)/(maxX-minX||1))*W-W/2;
-      scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(px,1,0),new THREE.Vector3(px,-(H*depthMult*0.4+2),0)]),new THREE.LineBasicMaterial({color:0x111120,transparent:true,opacity:0.35})));
-    }
-  }
+  buildGridLines(minX,maxX,maxD,W);
   // Anomaly rings
   if(DATA.anomalies) DATA.anomalies.forEach(a=>{
     const px=((a.x-minX)/(maxX-minX||1))*W-W/2;
-    const py=-(a.depth/maxD)*H*depthMult*0.4;
+    const py=-(a.depth/maxD)*60*depthMult*0.4;
     const color=a.severity==='HIGH'?0xe05555:0xe07a35;
-    const ring=new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(Array.from({length:33},(_,i)=>{const ang=i/32*Math.PI*2;return new THREE.Vector3(px+Math.cos(ang)*3,py+Math.sin(ang)*1.5,0.2);})),
-      new THREE.LineBasicMaterial({color,transparent:true,opacity:0.8})
-    );
+    const pts=Array.from({length:33},(_,i)=>{const ang=i/32*Math.PI*2;return new THREE.Vector3(px+Math.cos(ang)*3,py+Math.sin(ang)*1.5,0.3);});
+    const ring=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color,transparent:true,opacity:0.85}));
     scene.add(ring);
   });
 }
 
+function buildGridLines(minX,maxX,maxD,W) {
+  gridLines.forEach(l=>scene.remove(l));
+  gridLines=[];
+  if(!showGrid) return;
+  const mat=new THREE.LineBasicMaterial({color:0x111120,transparent:true,opacity:0.35});
+  for(let x=0;x<=(maxX-minX);x+=20){
+    const px=(x/(maxX-minX||1))*W-W/2;
+    const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(px,1,0),new THREE.Vector3(px,-60*depthMult*0.4-2,0)]),mat);
+    scene.add(l); gridLines.push(l);
+  }
+  const dmat=new THREE.LineBasicMaterial({color:0x0d0d20,transparent:true,opacity:0.3});
+  [10,20,30,40].forEach(d=>{
+    const py=-(d/maxD)*60*depthMult*0.4;
+    const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-W/2,py,0),new THREE.Vector3(W/2,py,0)]),dmat);
+    scene.add(l); gridLines.push(l);
+  });
+}
+
 // ── 2D Canvas ──
+function resColorCSS(v) {
+  v=Math.max(0,Math.min(1,v));
+  if(v<0.15){const t=v/0.15;return `rgb(${Math.round(10+20*t)},${Math.round(30+120*t)},${Math.round(95+160*t)})`;}
+  if(v<0.3){const t=(v-0.15)/0.15;return `rgb(${Math.round(30+80*t)},${Math.round(150+100*t)},${Math.round(255-60*t)})`;}
+  if(v<0.45){const t=(v-0.3)/0.15;return `rgb(${Math.round(110+160*t)},${Math.round(250-50*t)},${Math.round(195-140*t)})`;}
+  if(v<0.6){const t=(v-0.45)/0.15;return `rgb(${Math.round(270-40*t)},${Math.round(200-110*t)},${Math.round(55+30*t)})`;}
+  if(v<0.8){const t=(v-0.6)/0.2;return `rgb(${Math.round(230-30*t)},${Math.round(90-70*t)},${Math.round(85+30*t)})`;}
+  const t=(v-0.8)/0.2;return `rgb(${Math.round(200-60*t)},${Math.round(20+20*t)},${Math.round(115+50*t)})`;
+}
+
+function getErtBounds(){
+  const grid=DATA.grid;
+  const xs=grid.map(p=>p[0]),ds=grid.map(p=>p[1]),rs=grid.map(p=>p[2]);
+  return {minX:Math.min(...xs),maxX:Math.max(...xs),minD:Math.min(...ds),maxD:Math.max(...ds),minR:DATA.min_res||Math.min(...rs),maxR:DATA.max_res||Math.max(...rs)};
+}
+
 function draw2D() {
-  const canvas = document.getElementById('canvas2d');
-  const ctx = canvas.getContext('2d');
+  const canvas=document.getElementById('canvas2d');
+  const ctx=canvas.getContext('2d');
   const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
   ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
   if(!DATA||!DATA.grid) return;
-  const grid=DATA.grid;
-  const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
-  if(!isERT) return;
-  const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);
-  const minX=Math.min(...xs),maxX=Math.max(...xs);
-  const minD=Math.min(...depths),maxD=Math.max(...depths);
-  const minR=DATA.min_res||Math.min(...ress);
-  const maxR=DATA.max_res||Math.max(...ress);
-  const PAD=30,plotW=W-PAD*2,plotH=H-PAD*2;
-  const pw=Math.max(3,(plotW/(maxX-minX+1))*2.8);
-  const ph=Math.max(3,(plotH/(maxD-minD+1))*8*depthMult*0.3);
-  grid.forEach(([x,d,r])=>{
-    const px=PAD+((x-minX)/(maxX-minX||1))*plotW;
-    const py=PAD+((d-minD)/(maxD-minD||1))*plotH;
+  const {minX,maxX,minD,maxD,minR,maxR}=getErtBounds();
+  const PAD=32,pW=W-PAD*2,pH=H-PAD*2;
+  const pw=Math.max(2,(pW/(maxX-minX+1))*3);
+  const ph=Math.max(2,(pH/(maxD-minD+1))*7);
+  DATA.grid.forEach(([x,d,r])=>{
+    const px=PAD+((x-minX)/(maxX-minX||1))*pW;
+    const py=PAD+((d-minD)/(maxD-minD||1))*pH;
     const v=(Math.log10(Math.max(r,1))-Math.log10(Math.max(minR,1)))/(Math.log10(Math.max(maxR,1))-Math.log10(Math.max(minR,1))||1);
     ctx.fillStyle=resColorCSS(v);
     ctx.fillRect(px-pw/2,py-ph/2,pw,ph);
   });
-  // Anomaly circles
   if(DATA.anomalies) DATA.anomalies.forEach(a=>{
     if(a.severity!=='HIGH') return;
-    const px=PAD+((a.x-minX)/(maxX-minX||1))*plotW;
-    const py=PAD+((a.depth-minD)/(maxD-minD||1))*plotH;
+    const px=PAD+((a.x-minX)/(maxX-minX||1))*pW;
+    const py=PAD+((a.depth-minD)/(maxD-minD||1))*pH;
     ctx.strokeStyle='#e05555'; ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle='rgba(224,85,85,0.3)'; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.arc(px,py,14,0,Math.PI*2); ctx.stroke();
   });
   // Axes
-  ctx.strokeStyle='rgba(200,169,110,0.3)'; ctx.lineWidth=0.5;
-  ctx.beginPath(); ctx.moveTo(PAD,PAD); ctx.lineTo(PAD,H-PAD); ctx.lineTo(W-PAD,H-PAD); ctx.stroke();
-  // Labels
+  ctx.strokeStyle='rgba(200,169,110,0.25)'; ctx.lineWidth=0.5;
+  ctx.strokeRect(PAD,PAD,pW,pH);
   ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='8px JetBrains Mono'; ctx.textAlign='center';
-  [0,50,100,150,200].forEach(x=>{
-    const px=PAD+((x-minX)/(maxX-minX||1))*plotW;
-    if(px>=PAD&&px<=W-PAD) ctx.fillText(x+'m',px,H-PAD+14);
-  });
+  for(let x=0;x<=maxX;x+=40){const px=PAD+((x-minX)/(maxX-minX||1))*pW;if(px>=PAD&&px<=W-PAD)ctx.fillText(x+'m',px,H-PAD+14);}
   ctx.textAlign='right';
-  [5,15,25,35,45].forEach(d=>{
-    const py=PAD+((d-minD)/(maxD-minD||1))*plotH;
-    if(py>=PAD&&py<=H-PAD) ctx.fillText(d+'m',PAD-4,py+3);
-  });
+  [5,15,25,35,45].forEach(d=>{const py=PAD+((d-minD)/(maxD-minD||1))*pH;if(py>=PAD&&py<=H-PAD)ctx.fillText(d+'m',PAD-4,py+3);});
 }
 
 function drawPseudo() {
-  const canvas = document.getElementById('canvasPs');
-  const ctx = canvas.getContext('2d');
+  const canvas=document.getElementById('canvasPs');
+  const ctx=canvas.getContext('2d');
   const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
   ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
   if(!DATA||!DATA.grid) return;
-  const grid=DATA.grid;
-  const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
-  if(!isERT) return;
-  const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);
-  const minX=Math.min(...xs),maxX=Math.max(...xs);
-  const minD=Math.min(...depths),maxD=Math.max(...depths);
-  const minR=DATA.min_res||Math.min(...ress);
-  const maxR=DATA.max_res||Math.max(...ress);
-  const PAD=20,plotW=W-PAD*2,plotH=H-PAD*2;
-  // Draw as pseudosection (triangular shape)
-  const layers = {};
-  grid.forEach(([x,d,r])=>{
-    if(!layers[d]) layers[d]=[];
-    layers[d].push([x,r]);
-  });
-  const layerKeys=Object.keys(layers).map(Number).sort((a,b)=>a-b);
-  const nLayers=layerKeys.length;
-  layerKeys.forEach((d,li)=>{
-    const pts=layers[d];
-    const rowH=plotH/nLayers;
-    const yCenter=PAD+li*rowH+rowH/2;
-    const shrink=li/nLayers;
-    const rowW=plotW*(1-shrink*0.5);
-    const xOff=PAD+(plotW-rowW)/2;
+  const {minX,maxX,minR,maxR}=getErtBounds();
+  const PAD=24;
+  // Group by depth level
+  const layers={};
+  DATA.grid.forEach(([x,d,r])=>{const key=d.toFixed(2);if(!layers[key])layers[key]=[];layers[key].push([x,r]);});
+  const keys=Object.keys(layers).map(Number).sort((a,b)=>a-b);
+  const n=keys.length;
+  const plotH=H-PAD*2;
+  const rowH=plotH/n;
+  keys.forEach((d,li)=>{
+    const pts=layers[d.toFixed(2)];
+    const yc=PAD+li*rowH+rowH/2;
+    const shrink=li/(n*1.5);
+    const rowW=(W-PAD*2)*(1-shrink);
+    const xOff=PAD+(W-PAD*2-rowW)/2;
     pts.forEach(([x,r])=>{
       const px=xOff+((x-minX)/(maxX-minX||1))*rowW;
       const v=(Math.log10(Math.max(r,1))-Math.log10(Math.max(minR,1)))/(Math.log10(Math.max(maxR,1))-Math.log10(Math.max(minR,1))||1);
       ctx.fillStyle=resColorCSS(v);
-      ctx.fillRect(px-4,yCenter-3,8,6);
+      const s=Math.max(2,rowW/(maxX-minX+1)*3);
+      ctx.fillRect(px-s/2,yc-rowH*0.4,s,rowH*0.8);
     });
   });
-  ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='center';
-  ctx.fillText('Pseudosection',W/2,H-4);
+  // Depth labels
+  ctx.fillStyle='rgba(232,228,220,0.25)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='right';
+  keys.filter((_,i)=>i%3===0).forEach((d,li)=>{
+    const yc=PAD+keys.indexOf(d)*rowH+rowH/2;
+    ctx.fillText(d.toFixed(1)+'m',PAD-2,yc+3);
+  });
 }
 
 function drawPlan() {
-  const canvas = document.getElementById('canvasPlan');
-  const ctx = canvas.getContext('2d');
+  // Plan view = horizontal slice at a chosen depth (~4m = layer 3)
+  const canvas=document.getElementById('canvasPlan');
+  const ctx=canvas.getContext('2d');
   const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
   ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
   if(!DATA||!DATA.grid) return;
-  const grid=DATA.grid;
-  const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
-  if(!isERT) return;
-  // Plan view: show top layer as color map
-  const topLayer=grid.filter(p=>p[1]<3);
-  const xs=topLayer.map(p=>p[0]),ress=topLayer.map(p=>p[2]);
-  const minX=Math.min(...xs),maxX=Math.max(...xs);
-  const minR=DATA.min_res||Math.min(...ress);
-  const maxR=DATA.max_res||Math.max(...ress);
-  const PAD=20,plotW=W-PAD*2,plotH=H-PAD*2;
-  const bw=Math.max(4,(plotW/(maxX-minX+1))*3);
-  topLayer.forEach(([x,d,r])=>{
-    const px=PAD+((x-minX)/(maxX-minX||1))*plotW;
+  const {minX,maxX,minR,maxR}=getErtBounds();
+  // Get layer closest to 4m depth
+  const depths=[...new Set(DATA.grid.map(p=>p[1]))].sort((a,b)=>a-b);
+  const targetDepth=depths[Math.min(2,depths.length-1)]; // layer 3
+  const slice=DATA.grid.filter(([x,d,r])=>Math.abs(d-targetDepth)<0.5);
+  if(!slice.length) return;
+  const PAD=32, pW=W-PAD*2, pH=H-PAD*2;
+  const bw=Math.max(4,pW/(maxX-minX+1)*3);
+  // Draw as vertical stripes (profile view from above)
+  slice.forEach(([x,d,r])=>{
+    const px=PAD+((x-minX)/(maxX-minX||1))*pW;
     const v=(Math.log10(Math.max(r,1))-Math.log10(Math.max(minR,1)))/(Math.log10(Math.max(maxR,1))-Math.log10(Math.max(minR,1))||1);
-    ctx.fillStyle=resColorCSS(v);
-    ctx.fillRect(px-bw/2,PAD,bw,plotH);
+    // Draw gradient vertically to give depth feel
+    const grad=ctx.createLinearGradient(0,PAD,0,H-PAD);
+    grad.addColorStop(0,resColorCSS(v));
+    grad.addColorStop(0.5,resColorCSS(v*0.85));
+    grad.addColorStop(1,resColorCSS(v*0.6));
+    ctx.fillStyle=grad;
+    ctx.fillRect(px-bw/2,PAD,bw,pH);
   });
-  // Anomaly markers
+  // Anomaly lines
   if(DATA.anomalies) DATA.anomalies.forEach(a=>{
-    const px=PAD+((a.x-minX)/(maxX-minX||1))*plotW;
-    ctx.strokeStyle=a.severity==='HIGH'?'#e05555':'#e07a35';
-    ctx.lineWidth=1.5;
-    ctx.beginPath();
-    ctx.moveTo(px,PAD); ctx.lineTo(px,H-PAD);
-    ctx.stroke();
-    ctx.fillStyle=ctx.strokeStyle; ctx.font='7px JetBrains Mono'; ctx.textAlign='center';
-    ctx.fillText(`${a.x}m`,px,PAD-3);
+    if(Math.abs(a.depth-targetDepth)>8) return;
+    const px=PAD+((a.x-minX)/(maxX-minX||1))*pW;
+    ctx.strokeStyle=a.severity==='HIGH'?'rgba(224,85,85,0.8)':'rgba(224,122,53,0.6)';
+    ctx.lineWidth=a.severity==='HIGH'?2:1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(px,PAD); ctx.lineTo(px,H-PAD); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=ctx.strokeStyle; ctx.font='8px JetBrains Mono'; ctx.textAlign='center';
+    ctx.fillText(`${a.x}m`,px,PAD-4);
   });
+  // Axes
+  ctx.strokeStyle='rgba(200,169,110,0.2)'; ctx.lineWidth=0.5; ctx.strokeRect(PAD,PAD,pW,pH);
   ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='center';
-  ctx.fillText('Surface Plan View',W/2,H-4);
-}
-
-function resColorCSS(v) {
-  if(v<0.15) return `rgb(${Math.round(10+20*v)},${Math.round(30+120*v)},${Math.round(100+155*v)})`;
-  if(v<0.3){const t=(v-0.15)/0.15;return `rgb(${Math.round(20+100*t)},${Math.round(150+100*t)},${Math.round(250-70*t)})`;}
-  if(v<0.45){const t=(v-0.3)/0.15;return `rgb(${Math.round(120+155*t)},${Math.round(250-50*t)},${Math.round(180-130*t)})`;}
-  if(v<0.6){const t=(v-0.45)/0.15;return `rgb(${Math.round(275-50*t)},${Math.round(200-120*t)},${Math.round(50+30*t)})`;}
-  if(v<0.8){const t=(v-0.6)/0.2;return `rgb(${Math.round(225-30*t)},${Math.round(80-60*t)},${Math.round(80+30*t)})`;}
-  return `rgb(${Math.round(195-50*v)},${Math.round(20+10*v)},${Math.round(110+40*v)})`;
+  for(let x=0;x<=(maxX-minX);x+=40){const px=PAD+(x/(maxX-minX||1))*pW;ctx.fillText((minX+x)+'m',px,H-PAD+12);}
+  ctx.fillStyle='rgba(200,169,110,0.5)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
+  ctx.fillText(`Depth slice: ~${targetDepth.toFixed(1)}m`,PAD,PAD-4);
 }
 
 // ── LAYOUT ──
 function setLayout(layout) {
-  currentLayout=layout;
   document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('v'+layout.replace('quad','4').replace('3d','3d').replace('2d','2d').replace('pseudo','ps').replace('plan','pl')).classList.add('active');
+  const ids={quad:'v4','3d':'v3d','2d':'v2d',pseudo:'vps',plan:'vpl'};
+  document.getElementById(ids[layout]).classList.add('active');
   const ws=document.getElementById('workspace');
-  const p3d=document.getElementById('panel3d');
-  const p2d=document.getElementById('panel2d');
-  const pPs=document.getElementById('panelPs');
-  const pPl=document.getElementById('panelPlan');
-  const show=el=>{el.style.display='block';};
-  const hide=el=>{el.style.display='none';};
-  [p3d,p2d,pPs,pPl].forEach(show);
-  if(layout==='quad'){
-    ws.style.gridTemplateColumns='1fr 1fr';
-    ws.style.gridTemplateRows='1fr 1fr';
-  } else if(layout==='3d'){
+  const panels=['panel3d','panel2d','panelPs','panelPlan'];
+  panels.forEach(id=>document.getElementById(id).style.display='block');
+  if(layout==='quad'){ws.style.gridTemplateColumns='1fr 1fr';ws.style.gridTemplateRows='1fr 1fr';}
+  else{
     ws.style.gridTemplateColumns='1fr'; ws.style.gridTemplateRows='1fr';
-    [p2d,pPs,pPl].forEach(hide);
-  } else if(layout==='2d'){
-    ws.style.gridTemplateColumns='1fr'; ws.style.gridTemplateRows='1fr';
-    [p3d,pPs,pPl].forEach(hide);
-    draw2D();
-  } else if(layout==='pseudo'){
-    ws.style.gridTemplateColumns='1fr'; ws.style.gridTemplateRows='1fr';
-    [p3d,p2d,pPl].forEach(hide);
-    drawPseudo();
-  } else if(layout==='plan'){
-    ws.style.gridTemplateColumns='1fr'; ws.style.gridTemplateRows='1fr';
-    [p3d,p2d,pPs].forEach(hide);
-    drawPlan();
+    const show={quad:panels,'3d':['panel3d'],'2d':['panel2d'],pseudo:['panelPs'],plan:['panelPlan']}[layout];
+    panels.filter(p=>!show.includes(p)).forEach(p=>document.getElementById(p).style.display='none');
   }
-  resizeRenderer();
+  setTimeout(()=>{resizeRenderer();draw2D();drawPseudo();drawPlan();},50);
 }
 
 function resizeRenderer(){
@@ -558,7 +515,7 @@ function resizeRenderer(){
 }
 
 // ── CONTROLS ──
-function setupControls(){
+function setupMouseControls(){
   const canvas=document.getElementById('canvas3d');
   canvas.addEventListener('mousedown',e=>{isDrag=true;lastM={x:e.clientX,y:e.clientY};});
   window.addEventListener('mouseup',()=>isDrag=false);
@@ -577,15 +534,14 @@ function setupControls(){
 
 function resetCamera(){rotX=0.3;rotY=0.2;zoom=1;panX=0;panY=0;}
 function toggleAuto(){autoRot=!autoRot;document.getElementById('autoBtn').textContent=autoRot?'Auto ⏹':'Auto ▶';document.getElementById('autoBtn').classList.toggle('on',autoRot);}
-function toggleAnomalyOnly(){anomalyOnly=!anomalyOnly;document.getElementById('anomOnly').classList.toggle('on',anomalyOnly);buildScene();}
-function toggleWireframe(){showGrid=!showGrid;buildScene();}
+function toggleAnomalyOnly(){anomalyOnly=!anomalyOnly;document.getElementById('anomOnlyBtn').classList.toggle('on',anomalyOnly);buildScene();}
+function toggleGrid(){showGrid=!showGrid;document.getElementById('gridBtn').classList.toggle('on',showGrid);buildScene();}
 function updateDepth(v){depthMult=parseFloat(v);document.getElementById('depthVal').textContent=parseFloat(v).toFixed(1);buildScene();draw2D();drawPseudo();}
 function updateThresh(v){thresh=parseFloat(v);document.getElementById('threshVal').textContent=v;buildScene();}
 
-// ── ANIMATE ──
 function animate(){
-  animFrame=requestAnimationFrame(animate);
-  if(!renderer||!scene||!camera)return;
+  requestAnimationFrame(animate);
+  if(!renderer||!scene||!camera) return;
   if(autoRot) rotY+=0.004;
   scene.children.forEach(obj=>{obj.rotation.y=rotY;obj.rotation.x=rotX;});
   camera.position.set(panX,35*zoom+panY,120*zoom);
@@ -597,12 +553,7 @@ function animate(){
 window.addEventListener('resize',()=>{resizeRenderer();draw2D();drawPseudo();drawPlan();});
 
 // ── DEMO DATA ──
-const DEMO_DATA = {
-  "type":"ERT_INV","layers":16,"points":1017,
-  "min_res":9.6349,"max_res":13487,
-  "grid":[[7.5,1.25,14.22],[10,1.25,18.29],[12.5,1.25,19.81],[15,1.25,20.93],[17.5,1.25,23.62],[20,1.25,21.75],[27.5,1.25,60.95],[32.5,1.25,50.56],[37.5,1.25,47.24],[42.5,1.25,44.3],[47.5,1.25,31.87],[55,1.25,22.58],[60,1.25,23.15],[67.5,1.25,11.4],[70,1.25,10.84],[72.5,1.25,9.78],[80,1.25,15.47],[90,1.25,17.67],[97.5,1.25,24.59],[107.5,1.25,18.93],[115,1.25,26.04],[120,1.25,30.28],[130,1.25,20.82],[140,1.25,22.75],[150,1.25,18.8],[160,1.25,34.58],[170,1.25,32.81],[180,1.25,83.37],[190,1.25,160.9],[195,1.25,159.58],[200,1.25,118.56],[210,1.25,95.77],[220,1.25,44.77],[227.5,1.25,30.22],[7.5,4.14,13487],[10,4.14,220.11],[12.5,4.14,22.09],[17.5,4.14,19.43],[22.5,4.14,17.77],[27.5,4.14,18.21],[37.5,4.14,18.65],[47.5,4.14,18.48],[57.5,4.14,15.63],[67.5,4.14,11.39],[72.5,4.14,9.92],[80,4.14,16.21],[90,4.14,35.35],[100,4.14,31.61],[110,4.14,50.66],[115,4.14,62.27],[120,4.14,62.07],[125,4.14,62.23],[130,4.14,52.33],[140,4.14,34.39],[150,4.14,30.5],[160,4.14,32.36],[170,4.14,32.56],[180,4.14,52.32],[190,4.14,76.54],[195,4.14,120.14],[200,4.14,117.42],[210,4.14,102.34],[220,4.14,43.11],[10,5.8,13421],[12.5,5.8,404.24],[17.5,5.8,16.71],[22.5,5.8,16.82],[27.5,5.8,17.63],[37.5,5.8,18.5],[47.5,5.8,18.32],[57.5,5.8,15.55],[67.5,5.8,11.46],[72.5,5.8,10.92],[80,5.8,39.15],[90,5.8,101.64],[100,5.8,100.61],[110,5.8,172.2],[115,5.8,241.82],[120,5.8,243.72],[125,5.8,243.06],[130,5.8,202.68],[140,5.8,70.72],[150,5.8,45.45],[160,5.8,33.2],[170,5.8,45.83],[180,5.8,42.17],[190,5.8,41.98],[200,5.8,98.96],[210,5.8,55.7],[17.5,7.63,406.42],[25,7.63,16.99],[35,7.63,18.36],[45,7.63,18.44],[55,7.63,15.79],[65,7.63,16.08],[72.5,7.63,17.52],[80,7.63,102.87],[85,7.63,131.68],[90,7.63,131.78],[100,7.63,127.26],[110,7.63,185.49],[115,7.63,262.66],[120,7.63,268.74],[125,7.63,267.72],[130,7.63,229.68],[140,7.63,99.64],[150,7.63,65.11],[160,7.63,49.95],[170,7.63,52.89],[180,7.63,42.05],[190,7.63,40.32],[200,7.63,54.28],[20,9.64,400.71],[30,9.64,22.21],[40,9.64,21.42],[50,9.64,19.62],[60,9.64,19.29],[70,9.64,28.91],[80,9.64,120.44],[85,9.64,132.65],[90,9.64,132.11],[100,9.64,127.64],[110,9.64,185.58],[115,9.64,262.8],[120,9.64,268.9],[125,9.64,267.9],[130,9.64,229.92],[140,9.64,100.07],[150,9.64,67.53],[160,9.64,58.48],[170,9.64,58.1],[180,9.64,42.11],[190,9.64,40.32],[200,9.64,52.12],[30,11.86,44.53],[40,11.86,35.35],[50,11.86,31.17],[60,11.86,31.11],[70,11.86,46.73],[80,11.86,120.63],[85,11.86,132.57],[90,11.86,131.94],[100,11.86,127.49],[110,11.86,181.12],[115,11.86,253.76],[120,11.86,260.81],[125,11.86,260.09],[130,11.86,226.53],[140,11.86,100.02],[150,11.86,67.52],[160,11.86,60.07],[170,11.86,59.54],[180,11.86,43.1],[190,11.86,40.55],[200,11.86,52.1],[40,14.29,48.81],[50,14.29,45.04],[60,14.29,44.95],[70,14.29,56.1],[80,14.29,119.9],[85,14.29,129.81],[90,14.29,129.11],[100,14.29,124.5],[110,14.29,147.49],[115,14.29,171.87],[120,14.29,173.69],[125,14.29,173.36],[130,14.29,166.2],[140,14.29,97.88],[150,14.29,67.16],[160,14.29,60.25],[170,14.29,59.9],[180,14.29,48.87],[190,14.29,44.81],[50,16.97,53.46],[60,16.97,53.37],[70,16.97,58.85],[80,16.97,101.87],[85,16.97,103.47],[90,16.97,101.73],[100,16.97,77.42],[110,16.97,70.59],[120,16.97,69.62],[130,16.97,68.89],[140,16.97,68.58],[150,16.97,65.03],[160,16.97,60.22],[170,16.97,60.2],[180,16.97,57.05],[190,16.97,54.56],[60,19.92,57.04],[70,19.92,59.42],[80,19.92,77.35],[85,19.92,77.17],[90,19.92,71.35],[100,19.92,48.19],[110,19.92,43.21],[120,19.92,42.98],[130,19.92,43.37],[140,19.92,49.49],[150,19.92,57.66],[160,19.92,59.51],[170,19.92,60.68],[180,19.92,61.55],[190,19.92,63.64],[70,23.16,59.49],[80,23.16,63.67],[85,23.16,63.31],[90,23.16,59.22],[100,23.16,42.96],[110,23.16,39.14],[120,23.16,39.04],[130,23.16,39.93],[140,23.16,44.22],[150,23.16,52.39],[160,23.16,58.21],[170,23.16,61.13],[80,26.73,59.79],[85,26.73,58.96],[90,26.73,54.27],[100,26.73,42.62],[110,26.73,39.01],[120,26.73,38.92],[130,26.73,39.84],[140,26.73,43.45],[150,26.73,50.26],[160,26.73,57.28],[170,26.73,61.29],[85,30.65,57.79],[90,30.65,53.3],[100,30.65,42.6],[110,30.65,39.02],[120,30.65,38.92],[130,30.65,39.87],[140,30.65,43.38],[150,30.65,49.44],[160,30.65,56.15],[90,34.97,52.01],[100,34.97,42.7],[110,34.97,39.15],[120,34.97,39.09],[130,34.97,40.13],[140,34.97,43.43],[150,34.97,48.92],[100,39.72,43.08],[110,39.72,39.74],[120,39.72,39.66],[130,39.72,40.98],[140,39.72,43.88],[100,44.94,49.8],[110,44.94,41.78],[120,44.94,40.59],[130,44.94,43.86]],
-  "anomalies":[{"x":7.5,"depth":4.1375,"res":13487,"severity":"HIGH","type":"Cavity/Void"},{"x":10,"depth":5.80125,"res":13421,"severity":"HIGH","type":"Cavity/Void"},{"x":17.5,"depth":7.63137,"res":406.42,"severity":"MEDIUM","type":"Resistive structure"},{"x":12.5,"depth":5.80125,"res":404.24,"severity":"MEDIUM","type":"Resistive structure"},{"x":120,"depth":7.63137,"res":268.74,"severity":"MEDIUM","type":"Resistive structure"}]
-};
+const DEMO_DATA={"type":"ERT_INV","layers":16,"points":1017,"min_res":9.6349,"max_res":13487,"filename":"demo-oluklucesme.INV","grid":[[7.5,1.25,14.22],[10,1.25,18.29],[15,1.25,20.93],[20,1.25,21.75],[27.5,1.25,60.95],[37.5,1.25,47.24],[50,1.25,23.01],[67.5,1.25,11.4],[72.5,1.25,9.78],[80,1.25,15.47],[90,1.25,17.67],[100,1.25,19.27],[115,1.25,26.04],[120,1.25,30.28],[140,1.25,22.75],[160,1.25,34.58],[180,1.25,83.37],[190,1.25,160.9],[200,1.25,118.56],[220,1.25,44.77],[227.5,1.25,30.22],[7.5,2.625,26.65],[15,2.625,21.53],[27.5,2.625,36.61],[50,2.625,19.83],[72.5,2.625,9.8],[90,2.625,18.68],[120,2.625,30.14],[150,2.625,27.46],[180,2.625,81.92],[195,2.625,154.28],[210,2.625,103.77],[7.5,4.14,13487],[10,4.14,220.11],[17.5,4.14,19.43],[27.5,4.14,18.21],[50,4.14,17.45],[72.5,4.14,9.92],[90,4.14,35.35],[110,4.14,50.66],[120,4.14,62.07],[130,4.14,52.33],[150,4.14,30.5],[170,4.14,32.56],[190,4.14,76.54],[200,4.14,117.42],[10,5.8,13421],[12.5,5.8,404.24],[27.5,5.8,17.63],[50,5.8,17.17],[72.5,5.8,10.92],[85,5.8,84.43],[100,5.8,100.61],[115,5.8,241.82],[120,5.8,243.72],[130,5.8,202.68],[150,5.8,45.45],[170,5.8,45.83],[195,5.8,80.38],[17.5,7.63,406.42],[35,7.63,18.36],[55,7.63,15.79],[72.5,7.63,17.52],[80,7.63,102.87],[90,7.63,131.78],[100,7.63,127.26],[115,7.63,262.66],[120,7.63,268.74],[130,7.63,229.68],[150,7.63,65.11],[170,7.63,52.89],[190,7.63,40.32],[20,9.64,400.71],[40,9.64,21.42],[60,9.64,19.29],[80,9.64,120.44],[90,9.64,132.11],[100,9.64,127.64],[115,9.64,262.8],[120,9.64,268.9],[130,9.64,229.92],[150,9.64,67.53],[170,9.64,58.1],[190,9.64,40.32],[30,11.86,44.53],[50,11.86,31.17],[70,11.86,46.73],[85,11.86,132.57],[100,11.86,127.49],[115,11.86,253.76],[120,11.86,260.81],[130,11.86,226.53],[150,11.86,67.52],[170,11.86,59.54],[45,14.29,46.4],[65,14.29,47.71],[80,14.29,119.9],[90,14.29,129.11],[100,14.29,124.5],[115,14.29,171.87],[120,14.29,173.69],[130,14.29,166.2],[150,14.29,67.16],[170,14.29,59.9],[55,16.97,53.2],[75,16.97,70.95],[85,16.97,103.47],[95,16.97,90.48],[100,16.97,77.42],[115,16.97,70.08],[120,16.97,69.62],[130,16.97,68.89],[150,16.97,65.03],[65,19.92,57.49],[80,19.92,77.35],[90,19.92,71.35],[100,19.92,48.19],[115,19.92,42.99],[120,19.92,42.98],[130,19.92,43.37],[75,23.16,62.92],[85,23.16,63.31],[100,23.16,42.96],[115,23.16,39.01],[120,23.16,39.04],[85,26.73,58.96],[100,26.73,42.62],[115,26.73,38.9],[90,30.65,53.3],[105,30.65,39.86],[115,30.65,38.91],[95,34.97,48.33],[110,34.97,39.15],[100,39.72,43.08],[110,39.72,39.74],[105,44.94,46.35]],"anomalies":[{"x":7.5,"depth":4.1375,"res":13487,"severity":"HIGH","type":"Cavity/Void"},{"x":10,"depth":5.80125,"res":13421,"severity":"HIGH","type":"Cavity/Void"},{"x":17.5,"depth":7.63137,"res":406.42,"severity":"MEDIUM","type":"Resistive structure"},{"x":20,"depth":9.64451,"res":400.71,"severity":"MEDIUM","type":"Resistive structure"},{"x":120,"depth":7.63137,"res":268.74,"severity":"MEDIUM","type":"Resistive structure"}]};
 </script>
 </body>
 </html>

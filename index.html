@@ -520,6 +520,41 @@ function drawViz(data){
       ctx.strokeStyle='#e05555'; ctx.lineWidth=1.5;
       ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.stroke();
     });
+  } else {
+    // GPR Radargram: grid = [[v0,v1,...vN], ...] — her satır bir trace, sütunlar derinlik
+    const traces = grid;
+    const nTraces = traces.length;
+    const nDepth = traces[0] ? traces[0].length : 0;
+    if(nTraces===0||nDepth===0)return;
+    const tw = canvas.width / nTraces;
+    const dh = canvas.height / nDepth;
+    for(let t=0;t<nTraces;t++){
+      for(let d=0;d<nDepth;d++){
+        const v = traces[t][d]; // 0-1 normalize
+        ctx.fillStyle = gprColor(v);
+        ctx.fillRect(Math.floor(t*tw), Math.floor(d*dh), Math.max(1,Math.ceil(tw)), Math.max(1,Math.ceil(dh)));
+      }
+    }
+    // Anomali işaretleri
+    if(data.anomalies) data.anomalies.forEach(a=>{
+      if(a.severity!=='HIGH')return;
+      const px = (a.trace_idx/nTraces)*canvas.width;
+      const py = (a.depth_idx/nDepth)*canvas.height;
+      ctx.strokeStyle='#e05555'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.stroke();
+    });
+  }
+}
+
+function gprColor(v){
+  // Siyah-beyaz-kırmızı (jeofizik radargram paleti)
+  if(v<0.5){
+    const t=v*2;
+    const c=Math.round(t*255);
+    return `rgb(${c},${c},${c})`;
+  } else {
+    const t=(v-0.5)*2;
+    return `rgb(255,${Math.round(255*(1-t))},${Math.round(255*(1-t))})`;
   }
 }
 

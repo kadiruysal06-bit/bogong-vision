@@ -227,6 +227,18 @@ function loadDemo() {
 function initViewer() {
   updateInfoPanel();
   updateAnomalyList();
+  // Panel etiketlerini veri tipine göre güncelle
+  if(isGPR()){
+    document.querySelector('#panel3d .panel-label').textContent='3D GPR Point Cloud';
+    document.querySelector('#panel2d .panel-label').textContent='2D Radargram Section';
+    document.querySelector('#panelPs .panel-label').textContent='Depth Profile Traces';
+    document.querySelector('#panelPlan .panel-label').textContent='Depth Slice — Mid Sample';
+  } else {
+    document.querySelector('#panel3d .panel-label').textContent='3D Resistivity Model';
+    document.querySelector('#panel2d .panel-label').textContent='2D Inverse Model Section';
+    document.querySelector('#panelPs .panel-label').textContent='Apparent Resistivity Pseudosection';
+    document.querySelector('#panelPlan .panel-label').textContent='Depth Slice — Layer 3 (~4m)';
+  }
   initThree();
   draw2D();
   drawPseudo();
@@ -284,6 +296,14 @@ function resColor(res, minR, maxR) {
   const t=(v-0.9)/0.1;return new THREE.Color(0.71-0.3*t,0.06+0.04*t,0.28+0.32*t);
 }
 
+function isGPR(){ return DATA&&(DATA.type==='GPR_SEGY'||DATA.type==='GPR_MALA_RD3'); }
+
+function gprColorThree(v){
+  // jeofizik: siyah→gri→beyaz→kırmızı
+  if(v<0.5){const t=v*2;return new THREE.Color(t,t,t);}
+  const t=(v-0.5)*2;return new THREE.Color(1,1-t,1-t);
+}
+
 function buildScene() {
   // Remove old objects
   const toRemove = scene.children.filter(c=>c.isPoints||c.isLine);
@@ -292,7 +312,31 @@ function buildScene() {
   if(!DATA||!DATA.grid) return;
   const grid=DATA.grid;
   const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
-  if(!isERT) return;
+  if(!isERT){
+    // GPR 3D: grid = [[v0..vN], ...] traces×depth, render as point cloud XYZ
+    const nTraces=grid.length;
+    const nDepth=grid[0]?grid[0].length:0;
+    if(!nTraces||!nDepth)return;
+    const pos=[],col=[];
+    const W=160,D=60;
+    for(let t=0;t<nTraces;t++){
+      for(let d=0;d<nDepth;d++){
+        const v=grid[t][d];
+        if(v<thresh/100) continue; // thresh reuse as opacity gate
+        const px=(t/nTraces)*W-W/2;
+        const py=-(d/nDepth)*D;
+        const c=gprColorThree(v);
+        pos.push(px,py,0); col.push(c.r,c.g,c.b);
+      }
+    }
+    if(pos.length){
+      const g=new THREE.BufferGeometry();
+      g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+      g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+      scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.5,vertexColors:true,transparent:true,opacity:0.9,sizeAttenuation:true})));
+    }
+    return;
+  }
   const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);
   const minX=Math.min(...xs),maxX=Math.max(...xs);
   const maxD=Math.max(...depths);
@@ -365,6 +409,15 @@ function resColorCSS(v) {
   const t=(v-0.8)/0.2;return `rgb(${Math.round(200-60*t)},${Math.round(20+20*t)},${Math.round(115+50*t)})`;
 }
 
+function gprColorCSS(v) {
+  // jeofizik radargram paleti: siyah → gri → beyaz → kırmızı
+  v=Math.max(0,Math.min(1,v));
+  if(v<0.5){const c=Math.round(v*2*255);return `rgb(${c},${c},${c})`;}
+  const t=(v-0.5)*2;
+  return `rgb(255,${Math.round(255*(1-t))},${Math.round(255*(1-t))})`;
+}
+
+
 function getErtBounds(){
   const grid=DATA.grid;
   const xs=grid.map(p=>p[0]),ds=grid.map(p=>p[1]),rs=grid.map(p=>p[2]);
@@ -377,6 +430,43 @@ function draw2D() {
   const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
   ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
   if(!DATA||!DATA.grid) return;
+  if(isGPR()){
+    // GPR Radargram: grid[trace][depth] = 0-1
+    const grid=DATA.grid;
+    const nTraces=grid.length, nDepth=grid[0]?grid[0].length:0;
+    if(!nTraces||!nDepth)return;
+    const PAD=32,pW=W-PAD*2,pH=H-PAD*2;
+    const tw=pW/nTraces, dh=pH/nDepth;
+    for(let t=0;t<nTraces;t++){
+      for(let d=0;d<nDepth;d++){
+        const v=grid[t][d];
+        ctx.fillStyle=gprColorCSS(v);
+        ctx.fillRect(PAD+Math.floor(t*tw), PAD+Math.floor(d*dh), Math.max(1,Math.ceil(tw)), Math.max(1,Math.ceil(dh)));
+      }
+    }
+    // Anomali işaretleri
+    if(DATA.anomalies) DATA.anomalies.forEach(a=>{
+      if(a.severity!=='HIGH') return;
+      const px=PAD+(a.trace_idx/nTraces)*pW;
+      const py=PAD+(a.depth_idx/nDepth)*pH;
+      ctx.strokeStyle='#e05555'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2); ctx.stroke();
+    });
+    // Eksenler
+    ctx.strokeStyle='rgba(200,169,110,0.25)'; ctx.lineWidth=0.5;
+    ctx.strokeRect(PAD,PAD,pW,pH);
+    ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='8px JetBrains Mono'; ctx.textAlign='center';
+    const step=Math.ceil(nTraces/8);
+    for(let t=0;t<nTraces;t+=step){const px=PAD+(t/nTraces)*pW;ctx.fillText(t+'',px,H-PAD+14);}
+    ctx.textAlign='right';
+    const dstep=Math.ceil(nDepth/5);
+    for(let d=0;d<nDepth;d+=dstep){const py=PAD+(d/nDepth)*pH;ctx.fillText(d+'',PAD-4,py+3);}
+    ctx.fillStyle='rgba(200,169,110,0.5)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
+    ctx.fillText('Trace →',PAD,H-PAD+24); ctx.textAlign='right';
+    ctx.save(); ctx.translate(PAD-18,PAD+pH/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center';
+    ctx.fillText('Depth →',0,0); ctx.restore();
+    return;
+  }
   const {minX,maxX,minD,maxD,minR,maxR}=getErtBounds();
   const PAD=32,pW=W-PAD*2,pH=H-PAD*2;
   const pw=Math.max(2,(pW/(maxX-minX+1))*3);
@@ -412,6 +502,32 @@ function drawPseudo() {
   const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
   ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
   if(!DATA||!DATA.grid) return;
+  if(isGPR()){
+    const grid=DATA.grid;
+    const nTraces=grid.length, nDepth=grid[0]?grid[0].length:0;
+    if(!nTraces||!nDepth)return;
+    const PAD=24, plotH=H-PAD*2, plotW=W-PAD*2;
+    const step=Math.max(1,Math.floor(nDepth/8));
+    const shown=[];
+    for(let d=0;d<nDepth;d+=step)shown.push(d);
+    const n=shown.length, rowH=plotH/n;
+    shown.forEach((d,li)=>{
+      const yc=PAD+li*rowH+rowH/2;
+      ctx.fillStyle='rgba(10,10,20,0.5)'; ctx.fillRect(PAD,yc-rowH*0.4,plotW,rowH*0.8);
+      ctx.beginPath();
+      for(let t=0;t<nTraces;t++){
+        const v=grid[t][d];
+        const px=PAD+(t/nTraces)*plotW;
+        const py=yc-(v-0.5)*rowH*0.8;
+        t===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+      }
+      const alpha=0.4+li/n*0.5;
+      ctx.strokeStyle=`rgba(200,169,110,${alpha})`; ctx.lineWidth=0.8; ctx.stroke();
+      ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='right';
+      ctx.fillText('d:'+d,PAD-2,yc+3);
+    });
+    return;
+  }
   const {minX,maxX,minR,maxR}=getErtBounds();
   const PAD=24;
   // Group by depth level
@@ -450,6 +566,34 @@ function drawPlan() {
   const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
   ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
   if(!DATA||!DATA.grid) return;
+  if(isGPR()){
+    // GPR Plan: orta derinlik dilimini yatay bar olarak göster
+    const grid=DATA.grid;
+    const nTraces=grid.length, nDepth=grid[0]?grid[0].length:0;
+    if(!nTraces||!nDepth)return;
+    const targetD=Math.floor(nDepth/2); // orta derinlik
+    const PAD=32, pW=W-PAD*2, pH=H-PAD*2;
+    const tw=pW/nTraces;
+    // Her trace için seçili derinlik değerini dikey gradient olarak çiz
+    for(let t=0;t<nTraces;t++){
+      const v=grid[t][targetD];
+      const grad=ctx.createLinearGradient(0,PAD,0,H-PAD);
+      grad.addColorStop(0,gprColorCSS(v));
+      grad.addColorStop(0.5,gprColorCSS(v*0.85));
+      grad.addColorStop(1,gprColorCSS(v*0.5));
+      ctx.fillStyle=grad;
+      ctx.fillRect(PAD+Math.floor(t*tw),PAD,Math.max(1,Math.ceil(tw)),pH);
+    }
+    // Eksenler
+    ctx.strokeStyle='rgba(200,169,110,0.2)'; ctx.lineWidth=0.5;
+    ctx.strokeRect(PAD,PAD,pW,pH);
+    ctx.fillStyle='rgba(200,169,110,0.5)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
+    ctx.fillText(`Depth slice: sample ${targetD}`,PAD,PAD-4);
+    ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.textAlign='center';
+    const tstep=Math.ceil(nTraces/8);
+    for(let t=0;t<nTraces;t+=tstep){ctx.fillText(t+'',PAD+(t/nTraces)*pW,H-PAD+14);}
+    return;
+  }
   const {minX,maxX,minR,maxR}=getErtBounds();
   // Get layer closest to 4m depth
   const depths=[...new Set(DATA.grid.map(p=>p[1]))].sort((a,b)=>a-b);

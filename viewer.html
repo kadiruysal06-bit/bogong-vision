@@ -299,9 +299,8 @@ function resColor(res, minR, maxR) {
 function isGPR(){ return DATA&&(DATA.type==='GPR_SEGY'||DATA.type==='GPR_MALA_RD3'); }
 
 function gprColorThree(v){
-  // jeofizik: siyah→gri→beyaz→kırmızı
-  if(v<0.5){const t=v*2;return new THREE.Color(t,t,t);}
-  const t=(v-0.5)*2;return new THREE.Color(1,1-t,1-t);
+  // ERT ile aynı palet
+  return resColor(v,0,1);
 }
 
 function buildScene() {
@@ -411,11 +410,19 @@ function resColorCSS(v) {
 }
 
 function gprColorCSS(v) {
-  // jeofizik radargram paleti: siyah → gri → beyaz → kırmızı
+  // ERT ile aynı palet: koyu mavi → cyan → yeşil → sarı → turuncu → kırmızı
+  return resColorCSS(v);
+}
+
+function gprColorRGB(v) {
+  // ImageData için [r,g,b] döndür — ERT paleti
   v=Math.max(0,Math.min(1,v));
-  if(v<0.5){const c=Math.round(v*2*255);return `rgb(${c},${c},${c})`;}
-  const t=(v-0.5)*2;
-  return `rgb(255,${Math.round(255*(1-t))},${Math.round(255*(1-t))})`;
+  if(v<0.15){const t=v/0.15;return [Math.round(10+20*t),Math.round(30+120*t),Math.round(95+160*t)];}
+  if(v<0.3){const t=(v-0.15)/0.15;return [Math.round(30+80*t),Math.round(150+100*t),Math.round(255-60*t)];}
+  if(v<0.45){const t=(v-0.3)/0.15;return [Math.round(110+160*t),Math.round(250-50*t),Math.round(195-140*t)];}
+  if(v<0.6){const t=(v-0.45)/0.15;return [Math.round(270-40*t),Math.round(200-110*t),Math.round(55+30*t)];}
+  if(v<0.8){const t=(v-0.6)/0.2;return [Math.round(230-30*t),Math.round(90-70*t),Math.round(85+30*t)];}
+  const t=(v-0.8)/0.2;return [Math.round(200-60*t),Math.round(20+20*t),Math.round(115+50*t)];
 }
 
 
@@ -432,40 +439,47 @@ function draw2D() {
   ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
   if(!DATA||!DATA.grid) return;
   if(isGPR()){
-    // GPR Radargram: grid[trace][depth] = 0-1
     const grid=DATA.grid;
     const nTraces=grid.length, nDepth=grid[0]?grid[0].length:0;
     if(!nTraces||!nDepth)return;
-    const PAD=32,pW=W-PAD*2,pH=H-PAD*2;
-    const tw=pW/nTraces, dh=pH/nDepth;
-    for(let t=0;t<nTraces;t++){
-      for(let d=0;d<nDepth;d++){
-        const v=grid[t][d];
-        ctx.fillStyle=gprColorCSS(v);
-        ctx.fillRect(PAD+Math.floor(t*tw), PAD+Math.floor(d*dh), Math.max(1,Math.ceil(tw)), Math.max(1,Math.ceil(dh)));
+    const PAD=32, pW=Math.max(1,W-PAD*2), pH=Math.max(1,H-PAD*2);
+    // ImageData ile pixel-level çizim
+    const imgData=ctx.createImageData(pW,pH);
+    const buf=imgData.data;
+    for(let py=0;py<pH;py++){
+      const d=Math.min(nDepth-1,Math.floor((py/pH)*nDepth));
+      for(let px=0;px<pW;px++){
+        const t=Math.min(nTraces-1,Math.floor((px/pW)*nTraces));
+        const v=(grid[t]&&grid[t][d]!==undefined)?grid[t][d]:0;
+        const [r,g,b]=gprColorRGB(v);
+        const i=(py*pW+px)*4;
+        buf[i]=r; buf[i+1]=g; buf[i+2]=b; buf[i+3]=255;
       }
     }
-    // Anomali işaretleri
-    if(DATA.anomalies) DATA.anomalies.forEach(a=>{
-      if(a.severity!=='HIGH') return;
-      const px=PAD+(a.trace_idx/nTraces)*pW;
-      const py=PAD+(a.depth_idx/nDepth)*pH;
-      ctx.strokeStyle='#e05555'; ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2); ctx.stroke();
-    });
+    ctx.putImageData(imgData,PAD,PAD);
+    // Grid çizgileri
+    if(showGrid){
+      ctx.strokeStyle='rgba(200,169,110,0.15)'; ctx.lineWidth=0.5;
+      const tStep=Math.ceil(nTraces/8);
+      for(let t=0;t<nTraces;t+=tStep){
+        const px=PAD+(t/nTraces)*pW;
+        ctx.beginPath(); ctx.moveTo(px,PAD); ctx.lineTo(px,PAD+pH); ctx.stroke();
+      }
+      const dStep=Math.ceil(nDepth/6);
+      for(let d=0;d<nDepth;d+=dStep){
+        const py=PAD+(d/nDepth)*pH;
+        ctx.beginPath(); ctx.moveTo(PAD,py); ctx.lineTo(PAD+pW,py); ctx.stroke();
+      }
+    }
     // Eksenler
-    ctx.strokeStyle='rgba(200,169,110,0.25)'; ctx.lineWidth=0.5;
+    ctx.strokeStyle='rgba(200,169,110,0.3)'; ctx.lineWidth=0.5;
     ctx.strokeRect(PAD,PAD,pW,pH);
-    ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='8px JetBrains Mono'; ctx.textAlign='center';
-    const step=Math.ceil(nTraces/8);
-    for(let t=0;t<nTraces;t+=step){const px=PAD+(t/nTraces)*pW;ctx.fillText(t+'',px,H-PAD+14);}
+    ctx.fillStyle='rgba(232,228,220,0.4)'; ctx.font='8px JetBrains Mono'; ctx.textAlign='center';
+    const tstep=Math.ceil(nTraces/8);
+    for(let t=0;t<nTraces;t+=tstep){const px=PAD+(t/nTraces)*pW;ctx.fillText(t,px,H-PAD+14);}
     ctx.textAlign='right';
-    const dstep=Math.ceil(nDepth/5);
-    for(let d=0;d<nDepth;d+=dstep){const py=PAD+(d/nDepth)*pH;ctx.fillText(d+'',PAD-4,py+3);}
-    ctx.fillStyle='rgba(200,169,110,0.5)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
-    ctx.fillText('Trace →',PAD,H-PAD+24); ctx.textAlign='right';
-    ctx.save(); ctx.translate(PAD-18,PAD+pH/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center';
-    ctx.fillText('Depth →',0,0); ctx.restore();
+    const dstep=Math.ceil(nDepth/6);
+    for(let d=0;d<nDepth;d+=dstep){const py=PAD+(d/nDepth)*pH;ctx.fillText(d,PAD-4,py+3);}
     return;
   }
   const {minX,maxX,minD,maxD,minR,maxR}=getErtBounds();
@@ -568,31 +582,37 @@ function drawPlan() {
   ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
   if(!DATA||!DATA.grid) return;
   if(isGPR()){
-    // GPR Plan: orta derinlik dilimini yatay bar olarak göster
     const grid=DATA.grid;
     const nTraces=grid.length, nDepth=grid[0]?grid[0].length:0;
     if(!nTraces||!nDepth)return;
-    const targetD=Math.floor(nDepth/2); // orta derinlik
-    const PAD=32, pW=W-PAD*2, pH=H-PAD*2;
-    const tw=pW/nTraces;
-    // Her trace için seçili derinlik değerini dikey gradient olarak çiz
-    for(let t=0;t<nTraces;t++){
-      const v=grid[t][targetD];
-      const grad=ctx.createLinearGradient(0,PAD,0,H-PAD);
-      grad.addColorStop(0,gprColorCSS(v));
-      grad.addColorStop(0.5,gprColorCSS(v*0.85));
-      grad.addColorStop(1,gprColorCSS(v*0.5));
-      ctx.fillStyle=grad;
-      ctx.fillRect(PAD+Math.floor(t*tw),PAD,Math.max(1,Math.ceil(tw)),pH);
-    }
-    // Eksenler
-    ctx.strokeStyle='rgba(200,169,110,0.2)'; ctx.lineWidth=0.5;
-    ctx.strokeRect(PAD,PAD,pW,pH);
-    ctx.fillStyle='rgba(200,169,110,0.5)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
-    ctx.fillText(`Depth slice: sample ${targetD}`,PAD,PAD-4);
-    ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.textAlign='center';
-    const tstep=Math.ceil(nTraces/8);
-    for(let t=0;t<nTraces;t+=tstep){ctx.fillText(t+'',PAD+(t/nTraces)*pW,H-PAD+14);}
+    // 5 farklı derinlik dilimini yan yana göster
+    const PAD=32, pW=Math.max(1,W-PAD*2), pH=Math.max(1,H-PAD*2);
+    const slices=[0,Math.floor(nDepth*0.25),Math.floor(nDepth*0.5),Math.floor(nDepth*0.75),nDepth-1];
+    const nSlices=slices.length;
+    const sliceH=Math.floor(pH/nSlices);
+    slices.forEach((targetD,si)=>{
+      const imgData=ctx.createImageData(pW,sliceH);
+      const buf=imgData.data;
+      for(let py=0;py<sliceH;py++){
+        for(let px=0;px<pW;px++){
+          const t=Math.min(nTraces-1,Math.floor((px/pW)*nTraces));
+          const v=(grid[t]&&grid[t][targetD]!==undefined)?grid[t][targetD]:0;
+          const [r,g,b]=gprColorRGB(v);
+          const i=(py*pW+px)*4;
+          buf[i]=r; buf[i+1]=g; buf[i+2]=b; buf[i+3]=255;
+        }
+      }
+      ctx.putImageData(imgData,PAD,PAD+si*sliceH);
+      ctx.fillStyle='rgba(200,169,110,0.5)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
+      ctx.fillText(`d:${targetD}`,PAD+2,PAD+si*sliceH+10);
+      // Dilimler arası çizgi
+      ctx.strokeStyle='rgba(200,169,110,0.2)'; ctx.lineWidth=0.5;
+      ctx.beginPath(); ctx.moveTo(PAD,PAD+si*sliceH); ctx.lineTo(PAD+pW,PAD+si*sliceH); ctx.stroke();
+    });
+    ctx.strokeStyle='rgba(200,169,110,0.3)'; ctx.lineWidth=0.5;
+    ctx.strokeRect(PAD,PAD,pW,sliceH*nSlices);
+    ctx.fillStyle='rgba(200,169,110,0.6)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
+    ctx.fillText('Depth Slices →',PAD,PAD-4);
     return;
   }
   const {minX,maxX,minR,maxR}=getErtBounds();
@@ -679,8 +699,8 @@ function setupMouseControls(){
 
 function resetCamera(){rotX=0.3;rotY=0.2;zoom=1;panX=0;panY=0;}
 function toggleAuto(){autoRot=!autoRot;document.getElementById('autoBtn').textContent=autoRot?'Auto ⏹':'Auto ▶';document.getElementById('autoBtn').classList.toggle('on',autoRot);}
-function toggleAnomalyOnly(){anomalyOnly=!anomalyOnly;document.getElementById('anomOnlyBtn').classList.toggle('on',anomalyOnly);buildScene();}
-function toggleGrid(){showGrid=!showGrid;document.getElementById('gridBtn').classList.toggle('on',showGrid);buildScene();}
+function toggleAnomalyOnly(){anomalyOnly=!anomalyOnly;document.getElementById('anomOnlyBtn').classList.toggle('on',anomalyOnly);buildScene();if(isGPR())draw2D();}
+function toggleGrid(){showGrid=!showGrid;document.getElementById('gridBtn').classList.toggle('on',showGrid);buildScene();if(isGPR()){draw2D();drawPseudo();drawPlan();}}
 function updateDepth(v){depthMult=parseFloat(v);document.getElementById('depthVal').textContent=parseFloat(v).toFixed(1);buildScene();draw2D();drawPseudo();}
 function updateThresh(v){thresh=parseFloat(v);document.getElementById('threshVal').textContent=v;buildScene();}
 

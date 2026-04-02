@@ -143,8 +143,8 @@ canvas{display:block;width:100%;height:100%;}
   </div>
   <div class="sldr">
     <label>Thresh</label>
-    <input type="range" id="threshSlider" min="0" max="500" step="10" value="50" oninput="updateThresh(this.value)">
-    <span id="threshVal">50</span>
+    <input type="range" id="threshSlider" min="0" max="500" step="10" value="0" oninput="updateThresh(this.value)">
+    <span id="threshVal">0</span>
   </div>
 </div>
 
@@ -170,7 +170,7 @@ let scene, camera, renderer;
 let rotX=0.3, rotY=0.2, zoom=1, panX=0, panY=0;
 let isDrag=false, lastM={x:0,y:0};
 let autoRot=false, anomalyOnly=false, showGrid=true;
-let depthMult=3, thresh=50;
+let depthMult=3, thresh=0;
 let gridLines=[];
 
 // ── LOAD FROM LOCALSTORAGE (from main page) ──
@@ -225,29 +225,15 @@ function loadDemo() {
 
 // ── INIT ──
 function stretchGPRGrid() {
-  // GPR grid değerlerini percentile stretch ile yeniden normalize et
-  // p2-p98 arası stretch — derin sinyaller görünür olur
-  if(!isGPR()||!DATA.grid||!DATA.grid.length) return;
-  const grid=DATA.grid;
-  // Tüm değerleri topla
-  const all=[];
-  for(let t=0;t<grid.length;t++)
-    for(let d=0;d<grid[t].length;d++)
-      all.push(grid[t][d]);
-  all.sort((a,b)=>a-b);
-  const p2=all[Math.floor(all.length*0.02)];
-  const p98=all[Math.floor(all.length*0.98)];
-  const range=p98-p2||1;
-  // Grid'i in-place stretch et
-  for(let t=0;t<grid.length;t++)
-    for(let d=0;d<grid[t].length;d++)
-      grid[t][d]=Math.max(0,Math.min(1,(grid[t][d]-p2)/range));
+  // Backend zaten stretch ediyor — frontend'de gerek yok
+  return;
 }
 
 function initViewer() {
   updateInfoPanel();
   updateAnomalyList();
-  stretchGPRGrid(); // GPR için percentile stretch
+  stretchGPRGrid(); // backend zaten stretch etti — devre dışı
+  // (no-op)
   // Panel etiketlerini veri tipine göre güncelle
   if(isGPR()){
     document.querySelector('#panel3d .panel-label').textContent='3D GPR Point Cloud';

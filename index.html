@@ -528,7 +528,7 @@ function drawViz(data){
   const isERT=data.type!=='GPR_SEGY'&&data.type!=='GPR_MALA_RD3';
   if(!isERT){
     // GPR: stretch + ImageData
-    stretchGPRGrid(grid);
+    // backend zaten stretch etti — frontend stretch yok
     const nTraces=grid.length, nDepth=grid[0]?grid[0].length:0;
     if(!nTraces||!nDepth)return;
     const W=canvas.width, H=canvas.height;

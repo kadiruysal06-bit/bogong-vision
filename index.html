@@ -493,6 +493,30 @@ function buildAnomalyCard(a,i,type){
   return `<div class="anomaly-card ${sev}"><div style="flex:1"><div style="margin-bottom:6px"><span class="anomaly-badge">${sevLabel[sev][lang]||sev}</span></div><div class="anomaly-type">${a.type||'Anomaly'}</div><div class="anomaly-coords">${coords}</div></div>${res}</div>`;
 }
 
+function stretchGPRGrid(grid){
+  // p2-p98 percentile stretch
+  const all=[];
+  for(let t=0;t<grid.length;t++) for(let d=0;d<grid[t].length;d++) all.push(grid[t][d]);
+  all.sort((a,b)=>a-b);
+  const p2=all[Math.floor(all.length*0.02)];
+  const p98=all[Math.floor(all.length*0.98)];
+  const range=p98-p2||1;
+  for(let t=0;t<grid.length;t++)
+    for(let d=0;d<grid[t].length;d++)
+      grid[t][d]=Math.max(0,Math.min(1,(grid[t][d]-p2)/range));
+  return grid;
+}
+
+function gprColorRGB(v){
+  v=Math.max(0,Math.min(1,v));
+  if(v<0.15){const t=v/0.15;return [Math.round(10+20*t),Math.round(30+120*t),Math.round(95+160*t)];}
+  if(v<0.3){const t=(v-0.15)/0.15;return [Math.round(30+80*t),Math.round(150+100*t),Math.round(255-60*t)];}
+  if(v<0.45){const t=(v-0.3)/0.15;return [Math.round(110+160*t),Math.round(250-50*t),Math.round(195-140*t)];}
+  if(v<0.6){const t=(v-0.45)/0.15;return [Math.round(270-40*t),Math.round(200-110*t),Math.round(55+30*t)];}
+  if(v<0.8){const t=(v-0.6)/0.2;return [Math.round(230-30*t),Math.round(90-70*t),Math.round(85+30*t)];}
+  const t=(v-0.8)/0.2;return [Math.round(200-60*t),Math.round(20+20*t),Math.round(115+50*t)];
+}
+
 function drawViz(data){
   const canvas=document.getElementById('vizCanvas');
   const ctx=canvas.getContext('2d');
@@ -502,62 +526,49 @@ function drawViz(data){
   if(!data.grid||!data.grid.length)return;
   const grid=data.grid;
   const isERT=data.type!=='GPR_SEGY'&&data.type!=='GPR_MALA_RD3';
-  if(isERT){
-    const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);
-    const minX=Math.min(...xs),maxX=Math.max(...xs),minD=Math.min(...depths),maxD=Math.max(...depths);
-    const minR=data.min_res||Math.min(...ress),maxR=data.max_res||Math.max(...ress);
-    const pw=Math.max(3,(canvas.width/(maxX-minX+1))*2.5);
-    const ph=Math.max(3,(canvas.height/(maxD-minD+1))*8);
-    grid.forEach(([x,d,r])=>{
-      const px=((x-minX)/(maxX-minX||1))*(canvas.width-20)+10;
-      const py=((d-minD)/(maxD-minD||1))*(canvas.height-20)+10;
-      const v=(Math.log10(Math.max(r,1))-Math.log10(Math.max(minR,1)))/(Math.log10(Math.max(maxR,1))-Math.log10(Math.max(minR,1))||1);
-      ctx.fillStyle=resColor(v); ctx.fillRect(px-pw/2,py-ph/2,pw,ph);
-    });
-    if(data.anomalies) data.anomalies.forEach(a=>{
-      if(a.severity!=='HIGH')return;
-      const px=((a.x-minX)/(maxX-minX||1))*(canvas.width-20)+10;
-      const py=((a.depth-minD)/(maxD-minD||1))*(canvas.height-20)+10;
-      ctx.strokeStyle='#e05555'; ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.stroke();
-    });
-  } else {
-    // GPR Radargram: grid = [[v0,v1,...vN], ...] — her satır bir trace, sütunlar derinlik
-    const traces = grid;
-    const nTraces = traces.length;
-    const nDepth = traces[0] ? traces[0].length : 0;
-    if(nTraces===0||nDepth===0)return;
-    const tw = canvas.width / nTraces;
-    const dh = canvas.height / nDepth;
-    for(let t=0;t<nTraces;t++){
-      for(let d=0;d<nDepth;d++){
-        const v = traces[t][d]; // 0-1 normalize
-        ctx.fillStyle = gprColor(v);
-        ctx.fillRect(Math.floor(t*tw), Math.floor(d*dh), Math.max(1,Math.ceil(tw)), Math.max(1,Math.ceil(dh)));
+  if(!isERT){
+    // GPR: stretch + ImageData
+    stretchGPRGrid(grid);
+    const nTraces=grid.length, nDepth=grid[0]?grid[0].length:0;
+    if(!nTraces||!nDepth)return;
+    const W=canvas.width, H=canvas.height;
+    const PAD=8, pW=Math.max(1,W-PAD*2), pH=Math.max(1,H-PAD*2);
+    const imgData=ctx.createImageData(pW,pH);
+    const buf=imgData.data;
+    for(let py=0;py<pH;py++){
+      const d=Math.min(nDepth-1,Math.floor((py/pH)*nDepth));
+      for(let px=0;px<pW;px++){
+        const t=Math.min(nTraces-1,Math.floor((px/pW)*nTraces));
+        const v=grid[t]&&grid[t][d]!==undefined?grid[t][d]:0;
+        const [r,g,b]=gprColorRGB(v);
+        const i=(py*pW+px)*4;
+        buf[i]=r; buf[i+1]=g; buf[i+2]=b; buf[i+3]=255;
       }
     }
-    // Anomali işaretleri
-    if(data.anomalies) data.anomalies.forEach(a=>{
-      if(a.severity!=='HIGH')return;
-      const px = (a.trace_idx/nTraces)*canvas.width;
-      const py = (a.depth_idx/nDepth)*canvas.height;
-      ctx.strokeStyle='#e05555'; ctx.lineWidth=1.5;
-      ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.stroke();
-    });
+    ctx.putImageData(imgData,PAD,PAD);
+    return;
   }
+  // ERT çizimi
+  const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minD=Math.min(...depths),maxD=Math.max(...depths);
+  const minR=data.min_res||Math.min(...ress),maxR=data.max_res||Math.max(...ress);
+  const pw=Math.max(3,(canvas.width/(maxX-minX+1))*2.5);
+  const ph=Math.max(3,(canvas.height/(maxD-minD+1))*8);
+  grid.forEach(([x,d,r])=>{
+    const px=((x-minX)/(maxX-minX||1))*(canvas.width-20)+10;
+    const py=((d-minD)/(maxD-minD||1))*(canvas.height-20)+10;
+    const v=(Math.log10(Math.max(r,1))-Math.log10(Math.max(minR,1)))/(Math.log10(Math.max(maxR,1))-Math.log10(Math.max(minR,1))||1);
+    ctx.fillStyle=resColor(v); ctx.fillRect(px-pw/2,py-ph/2,pw,ph);
+  });
+  if(data.anomalies) data.anomalies.forEach(a=>{
+    if(a.severity!=='HIGH')return;
+    const px=((a.x-minX)/(maxX-minX||1))*(canvas.width-20)+10;
+    const py=((a.depth-minD)/(maxD-minD||1))*(canvas.height-20)+10;
+    ctx.strokeStyle='#e05555'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.stroke();
+  });
 }
 
-function gprColor(v){
-  // Siyah-beyaz-kırmızı (jeofizik radargram paleti)
-  if(v<0.5){
-    const t=v*2;
-    const c=Math.round(t*255);
-    return `rgb(${c},${c},${c})`;
-  } else {
-    const t=(v-0.5)*2;
-    return `rgb(255,${Math.round(255*(1-t))},${Math.round(255*(1-t))})`;
-  }
-}
 
 function resColor(v){
   if(v<0.2)return `rgb(${Math.round(10+20*v)},${Math.round(30+120*v)},${Math.round(100+150*v)})`;

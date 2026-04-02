@@ -224,9 +224,30 @@ function loadDemo() {
 }
 
 // ── INIT ──
+function stretchGPRGrid() {
+  // GPR grid değerlerini percentile stretch ile yeniden normalize et
+  // p2-p98 arası stretch — derin sinyaller görünür olur
+  if(!isGPR()||!DATA.grid||!DATA.grid.length) return;
+  const grid=DATA.grid;
+  // Tüm değerleri topla
+  const all=[];
+  for(let t=0;t<grid.length;t++)
+    for(let d=0;d<grid[t].length;d++)
+      all.push(grid[t][d]);
+  all.sort((a,b)=>a-b);
+  const p2=all[Math.floor(all.length*0.02)];
+  const p98=all[Math.floor(all.length*0.98)];
+  const range=p98-p2||1;
+  // Grid'i in-place stretch et
+  for(let t=0;t<grid.length;t++)
+    for(let d=0;d<grid[t].length;d++)
+      grid[t][d]=Math.max(0,Math.min(1,(grid[t][d]-p2)/range));
+}
+
 function initViewer() {
   updateInfoPanel();
   updateAnomalyList();
+  stretchGPRGrid(); // GPR için percentile stretch
   // Panel etiketlerini veri tipine göre güncelle
   if(isGPR()){
     document.querySelector('#panel3d .panel-label').textContent='3D GPR Point Cloud';

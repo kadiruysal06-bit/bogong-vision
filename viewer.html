@@ -248,7 +248,7 @@ function initViewer() {
   }
   initThree();
   // GPR için kamera başlangıç açısı — önden hafif açılı
-  if(isGPR()){ rotX=0.5; rotY=0.3; zoom=1; }
+  if(isGPR()){ rotX=0.7; rotY=0.4; zoom=0.9; }
   draw2D();
   drawPseudo();
   drawPlan();
@@ -610,12 +610,14 @@ function drawPlan() {
     const grid=DATA.grid;
     const nTraces=grid.length, nDepth=grid[0]?grid[0].length:0;
     if(!nTraces||!nDepth)return;
-    // 5 farklı derinlik dilimini yan yana göster
+    // Tüm alanı tek ImageData ile doldur — her satır bir derinlik dilimi
     const PAD=32, pW=Math.max(1,W-PAD*2), pH=Math.max(1,H-PAD*2);
-    const slices=[0,Math.floor(nDepth*0.25),Math.floor(nDepth*0.5),Math.floor(nDepth*0.75),nDepth-1];
+    const slices=[0,Math.floor(nDepth*0.2),Math.floor(nDepth*0.4),Math.floor(nDepth*0.6),Math.floor(nDepth*0.8)];
     const nSlices=slices.length;
-    const sliceH=Math.floor(pH/nSlices);
+    const sliceH=Math.max(1,Math.floor(pH/nSlices));
+    if(sliceH<1||pW<1)return;
     slices.forEach((targetD,si)=>{
+      if(sliceH<1)return;
       const imgData=ctx.createImageData(pW,sliceH);
       const buf=imgData.data;
       for(let py=0;py<sliceH;py++){
@@ -628,10 +630,9 @@ function drawPlan() {
         }
       }
       ctx.putImageData(imgData,PAD,PAD+si*sliceH);
-      ctx.fillStyle='rgba(200,169,110,0.5)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
+      ctx.fillStyle='rgba(200,169,110,0.6)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
       ctx.fillText(`d:${targetD}`,PAD+2,PAD+si*sliceH+10);
-      // Dilimler arası çizgi
-      ctx.strokeStyle='rgba(200,169,110,0.2)'; ctx.lineWidth=0.5;
+      ctx.strokeStyle='rgba(200,169,110,0.15)'; ctx.lineWidth=0.5;
       ctx.beginPath(); ctx.moveTo(PAD,PAD+si*sliceH); ctx.lineTo(PAD+pW,PAD+si*sliceH); ctx.stroke();
     });
     ctx.strokeStyle='rgba(200,169,110,0.3)'; ctx.lineWidth=0.5;

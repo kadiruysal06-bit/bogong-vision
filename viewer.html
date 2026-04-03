@@ -137,12 +137,12 @@ canvas{display:block;width:100%;height:100%;}
 
 <div id="sliders">
   <div class="sldr">
-    <label>Depth×</label>
+    <label id="depthLabel">Depth×</label>
     <input type="range" id="depthMult" min="1" max="8" step="0.5" value="3" oninput="updateDepth(this.value)">
     <span id="depthVal">3.0</span>
   </div>
   <div class="sldr">
-    <label>Thresh</label>
+    <label id="threshLabel">Thresh</label>
     <input type="range" id="threshSlider" min="0" max="500" step="10" value="0" oninput="updateThresh(this.value)">
     <span id="threshVal">0</span>
   </div>
@@ -234,6 +234,7 @@ function initViewer() {
   updateAnomalyList();
   stretchGPRGrid(); // backend zaten stretch etti — devre dışı
   // (no-op)
+  setupControlsForType(); // GPR/ERT'e göre kontrolleri ayarla
   // Panel etiketlerini veri tipine göre güncelle
   if(isGPR()){
     document.querySelector('#panel3d .panel-label').textContent='3D GPR Point Cloud';
@@ -324,7 +325,7 @@ function buildScene() {
     const nTraces=grid.length;
     const nDepth=grid[0]?grid[0].length:0;
     if(!nTraces||!nDepth)return;
-    const W=160, D=80, ZMAX=10; // ZMAX = Z ekseninde maks derinlik
+    const W=160, D=80, ZMAX=gprZMax;
 
     // ── Renk yardımcı ──
     function gprRGB(v){
@@ -465,9 +466,18 @@ function gprColorCSS(v) {
 }
 
 function gprColorRGB(v) {
-  // Gamma correction ile kontrast artır — zayıf sinyaller daha görünür
   v=Math.max(0,Math.min(1,v));
-  v=Math.pow(v, 0.5); // gamma=0.5 → karanlık bölgeler aydınlanır
+  v=Math.pow(v, gprGamma); // dinamik gamma
+  if(gprPalette===2){ // Gri ton
+    const c=Math.round(v*255);
+    return [c,c,c];
+  }
+  if(gprPalette===1){ // Termal
+    if(v<0.33){const t=v/0.33;return [0,Math.round(t*100),Math.round(128+t*127)];}
+    if(v<0.66){const t=(v-0.33)/0.33;return [Math.round(t*255),Math.round(100+t*155),Math.round(255-t*255)];}
+    const t=(v-0.66)/0.34;return [255,Math.round(255-t*255),0];
+  }
+  // ERT paleti (default)
   if(v<0.15){const t=v/0.15;return [Math.round(10+20*t),Math.round(30+120*t),Math.round(95+160*t)];}
   if(v<0.3){const t=(v-0.15)/0.15;return [Math.round(30+80*t),Math.round(150+100*t),Math.round(255-60*t)];}
   if(v<0.45){const t=(v-0.3)/0.15;return [Math.round(110+160*t),Math.round(250-50*t),Math.round(195-140*t)];}
@@ -751,10 +761,96 @@ function setupMouseControls(){
 
 function resetCamera(){rotX=0.3;rotY=0.2;zoom=1;panX=0;panY=0;}
 function toggleAuto(){autoRot=!autoRot;document.getElementById('autoBtn').textContent=autoRot?'Auto ⏹':'Auto ▶';document.getElementById('autoBtn').classList.toggle('on',autoRot);}
-function toggleAnomalyOnly(){anomalyOnly=!anomalyOnly;document.getElementById('anomOnlyBtn').classList.toggle('on',anomalyOnly);buildScene();if(isGPR())draw2D();}
-function toggleGrid(){showGrid=!showGrid;document.getElementById('gridBtn').classList.toggle('on',showGrid);buildScene();if(isGPR()){draw2D();drawPseudo();drawPlan();}}
-function updateDepth(v){depthMult=parseFloat(v);document.getElementById('depthVal').textContent=parseFloat(v).toFixed(1);buildScene();draw2D();drawPseudo();}
-function updateThresh(v){thresh=parseFloat(v);document.getElementById('threshVal').textContent=v;buildScene();}
+// GPR gamma değeri — slider tarafından kontrol edilir
+let gprGamma = 0.5;
+let gprZMax = 10;
+let gprPalette = 0; // 0=ERT, 1=thermal, 2=gray
+
+function setupControlsForType() {
+  if(isGPR()){
+    // Butonlar
+    document.getElementById('anomOnlyBtn').textContent = 'Palette';
+    document.getElementById('gridBtn').textContent = 'Grid';
+    // Slider 1: Gamma/Kontrast
+    document.getElementById('depthLabel').textContent = 'Contrast';
+    document.getElementById('depthMult').min = 1;
+    document.getElementById('depthMult').max = 10;
+    document.getElementById('depthMult').step = 0.5;
+    document.getElementById('depthMult').value = 5;
+    document.getElementById('depthVal').textContent = '5.0';
+    gprGamma = 0.5;
+    // Slider 2: Z Derinlik
+    document.getElementById('threshLabel').textContent = 'Z Depth';
+    document.getElementById('threshSlider').min = 0;
+    document.getElementById('threshSlider').max = 30;
+    document.getElementById('threshSlider').step = 1;
+    document.getElementById('threshSlider').value = 10;
+    document.getElementById('threshVal').textContent = '10';
+    gprZMax = 10;
+  } else {
+    document.getElementById('anomOnlyBtn').textContent = 'Anomaly';
+    document.getElementById('gridBtn').textContent = 'Grid';
+    document.getElementById('depthLabel').textContent = 'Depth×';
+    document.getElementById('depthMult').min = 1;
+    document.getElementById('depthMult').max = 8;
+    document.getElementById('depthMult').step = 0.5;
+    document.getElementById('depthMult').value = 3;
+    document.getElementById('depthVal').textContent = '3.0';
+    document.getElementById('threshLabel').textContent = 'Thresh';
+    document.getElementById('threshSlider').min = 0;
+    document.getElementById('threshSlider').max = 500;
+    document.getElementById('threshSlider').step = 10;
+    document.getElementById('threshSlider').value = 100;
+    document.getElementById('threshVal').textContent = '100';
+  }
+}
+
+function toggleAnomalyOnly(){
+  if(isGPR()){
+    // Renk paleti değiştir
+    gprPalette=(gprPalette+1)%3;
+    const labels=['ERT','Thermal','Gray'];
+    document.getElementById('anomOnlyBtn').textContent='Palette: '+labels[gprPalette];
+    draw2D(); drawPseudo(); drawPlan(); buildScene();
+  } else {
+    anomalyOnly=!anomalyOnly;
+    document.getElementById('anomOnlyBtn').classList.toggle('on',anomalyOnly);
+    buildScene();
+  }
+}
+
+function toggleGrid(){
+  showGrid=!showGrid;
+  document.getElementById('gridBtn').classList.toggle('on',showGrid);
+  buildScene();
+  if(isGPR()){draw2D();drawPseudo();drawPlan();}
+}
+
+function updateDepth(v){
+  if(isGPR()){
+    // Gamma: slider 1-10 → gamma 1.0-0.1
+    gprGamma = 1.1 - parseFloat(v)*0.1;
+    gprGamma = Math.max(0.1, Math.min(1.0, gprGamma));
+    document.getElementById('depthVal').textContent = parseFloat(v).toFixed(1);
+    draw2D(); drawPseudo(); drawPlan(); buildScene();
+  } else {
+    depthMult=parseFloat(v);
+    document.getElementById('depthVal').textContent=parseFloat(v).toFixed(1);
+    buildScene(); draw2D(); drawPseudo();
+  }
+}
+
+function updateThresh(v){
+  if(isGPR()){
+    gprZMax = parseFloat(v);
+    document.getElementById('threshVal').textContent = v;
+    buildScene();
+  } else {
+    thresh=parseFloat(v);
+    document.getElementById('threshVal').textContent=v;
+    buildScene();
+  }
+}
 
 function animate(){
   requestAnimationFrame(animate);

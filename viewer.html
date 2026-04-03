@@ -247,6 +247,8 @@ function initViewer() {
     document.querySelector('#panelPlan .panel-label').textContent='Depth Slice — Layer 3 (~4m)';
   }
   initThree();
+  // GPR için kamera başlangıç açısı — önden hafif açılı
+  if(isGPR()){ rotX=0.5; rotY=0.3; zoom=1; }
   draw2D();
   drawPseudo();
   drawPlan();
@@ -319,19 +321,19 @@ function buildScene() {
   const grid=DATA.grid;
   const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
   if(!isERT){
-    // GPR 3D: grid = [[v0..vN], ...] traces×depth, render as point cloud XYZ
+    // GPR 3D: trace=X, derinlik=Y(aşağı), amplitüd=renk
     const nTraces=grid.length;
     const nDepth=grid[0]?grid[0].length:0;
     if(!nTraces||!nDepth)return;
     const pos=[],col=[];
-    const W=160,D=60;
+    const W=160, D=80; // W=profil uzunluğu, D=derinlik
     for(let t=0;t<nTraces;t++){
       for(let d=0;d<nDepth;d++){
         const v=grid[t][d];
         if(v < thresh/1000) continue;
-        const px=(t/nTraces)*W-W/2;
-        const py=-(d/nDepth)*D;
-        const pz=(v-0.5)*20; // amplitüde göre Z ekseninde dağıt
+        const px=(t/nTraces)*W-W/2; // X: trace boyunca
+        const py=-(d/nDepth)*D;     // Y: derinlik aşağı
+        const pz=0;                  // Z: düz panel
         const c=gprColorThree(v);
         pos.push(px,py,pz); col.push(c.r,c.g,c.b);
       }
@@ -340,8 +342,14 @@ function buildScene() {
       const g=new THREE.BufferGeometry();
       g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
       g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
-      scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.5,vertexColors:true,transparent:true,opacity:0.9,sizeAttenuation:true})));
+      scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.8,vertexColors:true,transparent:true,opacity:0.95,sizeAttenuation:false})));
     }
+    // Yüzey çizgisi
+    const surf=new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-W/2,0,0),new THREE.Vector3(W/2,0,0)]),
+      new THREE.LineBasicMaterial({color:0xc8a96e,transparent:true,opacity:0.5})
+    );
+    scene.add(surf);
     return;
   }
   const xs=grid.map(p=>p[0]),depths=grid.map(p=>p[1]),ress=grid.map(p=>p[2]);

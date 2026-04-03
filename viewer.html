@@ -309,7 +309,7 @@ function resColor(res, minR, maxR) {
   const t=(v-0.9)/0.1;return new THREE.Color(0.71-0.3*t,0.06+0.04*t,0.28+0.32*t);
 }
 
-function isGPR(){ return DATA&&(DATA.type==='GPR_SEGY'||DATA.type==='GPR_MALA_RD3'); }
+function isGPR(){ return DATA&&(DATA.type==='GPR_SEGY'||DATA.type==='GPR_MALA_RD3'||DATA.type==='GPR_SAF'); }
 
 function gprColorThree(v){
   // ERT ile aynı palet

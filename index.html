@@ -181,6 +181,7 @@ input[type="file"]{display:none;}
         <span class="format-tag">.DAT</span>
         <span class="format-tag">.SGY</span>
         <span class="format-tag">.RD3</span>
+        <span class="format-tag">.SAF</span>
       </div>
     </div>
 
@@ -258,7 +259,7 @@ input[type="file"]{display:none;}
 </main>
 
 <footer>Bogong Vision · A Bogong AI Lab Product · bogongai.net</footer>
-<input type="file" id="fileInput" accept=".inv,.dat,.sgy,.segy,.rd3,.rd7">
+<input type="file" id="fileInput" accept=".inv,.dat,.sgy,.segy,.rd3,.rd7,.saf">
 
 <script>
 const API = '';
@@ -483,12 +484,15 @@ function buildAnomalyCard(a,i,type){
   const sev=a.severity||'MEDIUM';
   let coords='',res='';
   const sevLabel={HIGH:{en:'HIGH',tr:'YÜKSEK',de:'HOCH'},MEDIUM:{en:'MEDIUM',tr:'ORTA',de:'MITTEL'}};
-  if(type!=='GPR_SEGY'&&type!=='GPR_MALA_RD3'){
+  if(type!=='GPR_SEGY'&&type!=='GPR_MALA_RD3'&&type!=='GPR_SAF'){
     coords=`x = ${a.x}m &nbsp;·&nbsp; Depth: ${a.depth?a.depth.toFixed(1):'—'}m`;
     res=`<div class="anomaly-res">${a.res?Math.round(a.res).toLocaleString():'—'}<br><span class="anomaly-res-unit">Ωm</span></div>`;
   } else {
     const dpl = analysisResult?.depth_per_level;
-    coords=`Trace: ${a.trace_idx||'—'} · Depth: ${dpl ? (a.depth_idx*dpl).toFixed(1)+'m' : 'Level '+a.depth_idx}`;
+    const tsp = analysisResult?.trace_spacing;
+    const traceStr = a.trace_idx !== undefined ? (tsp ? (a.trace_idx*tsp).toFixed(1)+'m' : 'T'+a.trace_idx) : '—';
+    const depthStr = (a.depth_idx !== undefined && dpl) ? (a.depth_idx*dpl).toFixed(2)+'m' : (a.depth_idx !== undefined ? 'Level '+a.depth_idx : '—');
+    coords=`Position: ${traceStr} &nbsp;&middot;&nbsp; Depth: ${depthStr}`;
     res=`<div class="anomaly-res">${a.strength?(a.strength*100).toFixed(0):'—'}<br><span class="anomaly-res-unit">%</span></div>`;
   }
   return `<div class="anomaly-card ${sev}"><div style="flex:1"><div style="margin-bottom:6px"><span class="anomaly-badge">${sevLabel[sev][lang]||sev}</span></div><div class="anomaly-type">${a.type||'Anomaly'}</div><div class="anomaly-coords">${coords}</div></div>${res}</div>`;
@@ -521,12 +525,12 @@ function gprColorRGB(v){
 function drawViz(data){
   const canvas=document.getElementById('vizCanvas');
   const ctx=canvas.getContext('2d');
-  const isGPRType = data.type==='GPR_SEGY'||data.type==='GPR_MALA_RD3';
+  const isGPRType = data.type==='GPR_SEGY'||data.type==='GPR_MALA_RD3'||data.type==='GPR_SAF';
   canvas.width=canvas.offsetWidth; canvas.height=isGPRType?Math.min(canvas.offsetWidth*0.6,380):190;
   ctx.fillStyle='#0d0d1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
   if(!data.grid||!data.grid.length)return;
   const grid=data.grid;
-  const isERT=data.type!=='GPR_SEGY'&&data.type!=='GPR_MALA_RD3';
+  const isERT=data.type!=='GPR_SEGY'&&data.type!=='GPR_MALA_RD3'&&data.type!=='GPR_SAF';
   if(!isERT){
     // GPR: stretch + ImageData
     // backend zaten stretch etti — frontend stretch yok

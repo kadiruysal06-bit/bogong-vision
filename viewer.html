@@ -621,7 +621,8 @@ function drawPseudo() {
       const alpha=0.4+li/n*0.5;
       ctx.strokeStyle=`rgba(200,169,110,${alpha})`; ctx.lineWidth=0.8; ctx.stroke();
       ctx.fillStyle='rgba(232,228,220,0.3)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='right';
-      ctx.fillText('d:'+d,PAD-2,yc+3);
+      const depthLabel = DATA.depth_per_level ? (d*DATA.depth_per_level).toFixed(1)+'m' : 'd:'+d;
+      ctx.fillText(depthLabel,PAD-2,yc+3);
     });
     return;
   }

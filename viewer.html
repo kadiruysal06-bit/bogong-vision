@@ -530,7 +530,13 @@ function draw2D() {
     ctx.strokeRect(PAD,PAD,pW,pH);
     ctx.fillStyle='rgba(232,228,220,0.4)'; ctx.font='8px JetBrains Mono'; ctx.textAlign='center';
     const tstep=Math.ceil(nTraces/8);
-    for(let t=0;t<nTraces;t+=tstep){const px=PAD+(t/nTraces)*pW;ctx.fillText(t,px,H-PAD+14);}
+    const profileLength=DATA.profile_length||null;
+    const traceSpacing=DATA.trace_spacing||null;
+    for(let t=0;t<nTraces;t+=tstep){
+      const px=PAD+(t/nTraces)*pW;
+      const label=profileLength ? (t*traceSpacing).toFixed(1)+'m' : t;
+      ctx.fillText(label,px,H-PAD+14);
+    }
     ctx.textAlign='right';
     const dstep=Math.ceil(nDepth/6);
     const maxDepth=DATA.max_depth||null;
@@ -540,7 +546,6 @@ function draw2D() {
       const label=maxDepth ? (d*depthPerLevel).toFixed(1)+'m' : d;
       ctx.fillText(label,PAD-4,py+3);
     }
-    // Derinlik başlığı
     ctx.fillStyle='rgba(200,169,110,0.6)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
     ctx.fillText(maxDepth ? `max ${maxDepth}m` : 'depth', 2, PAD+pH/2);
     // Anomali işaretleri

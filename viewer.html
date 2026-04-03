@@ -315,8 +315,8 @@ function gprColorThree(v){
 
 function buildScene() {
   // Remove old objects
-  const toRemove = scene.children.filter(c=>c.isPoints||c.isLine);
-  toRemove.forEach(c=>scene.remove(c));
+  const toRemove = scene.children.filter(c=>c.isPoints||c.isLine||c.isMesh);
+  toRemove.forEach(c=>{ scene.remove(c); if(c.geometry)c.geometry.dispose(); });
   gridLines=[];
   if(!DATA||!DATA.grid) return;
   const grid=DATA.grid;

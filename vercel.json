@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/analyze", "destination": "http://134.199.155.72:8000/analyze" },
+    { "source": "/interpret", "destination": "http://134.199.155.72:8000/interpret" },
+    { "source": "/health", "destination": "http://134.199.155.72:8000/health" }
+  ]
+}

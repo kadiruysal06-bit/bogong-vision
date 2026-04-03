@@ -271,7 +271,7 @@ function updateAnomalyList() {
     <div class="anom-item ${a.severity}">
       ${a.severity} · ${a.type||'Anomaly'}<br>
       ${a.trace_idx!==undefined
-        ? `Trace: ${a.trace_idx} · Depth: ${a.depth_idx}`
+        ? `Trace: ${a.trace_idx} · Depth: ${DATA.depth_per_level ? (a.depth_idx*DATA.depth_per_level).toFixed(1)+'m' : a.depth_idx}`
         : `x=${a.x}m · ${a.depth?a.depth.toFixed(1)+'m':''}`
       }<br>
       ${a.strength!==undefined ? `Strength: ${(a.strength*100).toFixed(0)}%` : (a.res?Math.round(a.res).toLocaleString()+' Ωm':'')}
@@ -533,7 +533,16 @@ function draw2D() {
     for(let t=0;t<nTraces;t+=tstep){const px=PAD+(t/nTraces)*pW;ctx.fillText(t,px,H-PAD+14);}
     ctx.textAlign='right';
     const dstep=Math.ceil(nDepth/6);
-    for(let d=0;d<nDepth;d+=dstep){const py=PAD+(d/nDepth)*pH;ctx.fillText(d,PAD-4,py+3);}
+    const maxDepth=DATA.max_depth||null;
+    const depthPerLevel=DATA.depth_per_level||null;
+    for(let d=0;d<nDepth;d+=dstep){
+      const py=PAD+(d/nDepth)*pH;
+      const label=maxDepth ? (d*depthPerLevel).toFixed(1)+'m' : d;
+      ctx.fillText(label,PAD-4,py+3);
+    }
+    // Derinlik başlığı
+    ctx.fillStyle='rgba(200,169,110,0.6)'; ctx.font='7px JetBrains Mono'; ctx.textAlign='left';
+    ctx.fillText(maxDepth ? `max ${maxDepth}m` : 'depth', 2, PAD+pH/2);
     // Anomali işaretleri
     if(DATA.anomalies) DATA.anomalies.forEach(a=>{
       if(a.trace_idx===undefined) return;

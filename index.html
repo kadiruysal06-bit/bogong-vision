@@ -487,7 +487,8 @@ function buildAnomalyCard(a,i,type){
     coords=`x = ${a.x}m &nbsp;·&nbsp; Depth: ${a.depth?a.depth.toFixed(1):'—'}m`;
     res=`<div class="anomaly-res">${a.res?Math.round(a.res).toLocaleString():'—'}<br><span class="anomaly-res-unit">Ωm</span></div>`;
   } else {
-    coords=`Trace: ${a.trace_idx||'—'} · Depth level: ${a.depth_idx||'—'}`;
+    const dpl = analysisResult?.depth_per_level;
+    coords=`Trace: ${a.trace_idx||'—'} · Depth: ${dpl ? (a.depth_idx*dpl).toFixed(1)+'m' : 'Level '+a.depth_idx}`;
     res=`<div class="anomaly-res">${a.strength?(a.strength*100).toFixed(0):'—'}<br><span class="anomaly-res-unit">%</span></div>`;
   }
   return `<div class="anomaly-card ${sev}"><div style="flex:1"><div style="margin-bottom:6px"><span class="anomaly-badge">${sevLabel[sev][lang]||sev}</span></div><div class="anomaly-type">${a.type||'Anomaly'}</div><div class="anomaly-coords">${coords}</div></div>${res}</div>`;

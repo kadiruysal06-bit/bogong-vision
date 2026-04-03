@@ -267,11 +267,14 @@ function updateInfoPanel() {
 
 function updateAnomalyList() {
   if(!DATA||!DATA.anomalies) return;
-  document.getElementById('anomList').innerHTML = DATA.anomalies.slice(0,4).map(a=>`
+  document.getElementById('anomList').innerHTML = DATA.anomalies.slice(0,6).map(a=>`
     <div class="anom-item ${a.severity}">
       ${a.severity} · ${a.type||'Anomaly'}<br>
-      x=${a.x}m · ${a.depth?a.depth.toFixed(1)+'m deep':''}<br>
-      ${a.res?Math.round(a.res).toLocaleString()+' Ωm':''}
+      ${a.trace_idx!==undefined
+        ? `Trace: ${a.trace_idx} · Depth: ${a.depth_idx}`
+        : `x=${a.x}m · ${a.depth?a.depth.toFixed(1)+'m':''}`
+      }<br>
+      ${a.strength!==undefined ? `Strength: ${(a.strength*100).toFixed(0)}%` : (a.res?Math.round(a.res).toLocaleString()+' Ωm':'')}
     </div>`).join('');
 }
 
@@ -531,6 +534,20 @@ function draw2D() {
     ctx.textAlign='right';
     const dstep=Math.ceil(nDepth/6);
     for(let d=0;d<nDepth;d+=dstep){const py=PAD+(d/nDepth)*pH;ctx.fillText(d,PAD-4,py+3);}
+    // Anomali işaretleri
+    if(DATA.anomalies) DATA.anomalies.forEach(a=>{
+      if(a.trace_idx===undefined) return;
+      const px=PAD+(a.trace_idx/nTraces)*pW;
+      const py=PAD+(a.depth_idx/nDepth)*pH;
+      const color=a.severity==='HIGH'?'#e05555':'#e07a35';
+      ctx.strokeStyle=color; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2); ctx.stroke();
+      ctx.strokeStyle=color.replace(')',',0.3)').replace('rgb','rgba'); ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(px,py,14,0,Math.PI*2); ctx.stroke();
+      // Trace numarası
+      ctx.fillStyle=color; ctx.font='bold 8px JetBrains Mono'; ctx.textAlign='center';
+      ctx.fillText(`T${a.trace_idx}`,px,py-18);
+    });
     return;
   }
   const {minX,maxX,minD,maxD,minR,maxR}=getErtBounds();

@@ -327,40 +327,30 @@ function buildScene() {
     if(!nTraces||!nDepth)return;
     const W=160, D=80, ZMAX=gprZMax;
 
-    // ── Renk yardımcı ──
-    function gprRGB(v){
-      if(v<0.15){const t=v/0.15;return [Math.round(10+20*t),Math.round(30+120*t),Math.round(95+160*t)];}
-      if(v<0.3){const t=(v-0.15)/0.15;return [Math.round(30+80*t),Math.round(150+100*t),Math.round(255-60*t)];}
-      if(v<0.45){const t=(v-0.3)/0.15;return [Math.round(110+160*t),Math.round(250-50*t),Math.round(195-140*t)];}
-      if(v<0.6){const t=(v-0.45)/0.15;return [Math.round(270-40*t),Math.round(200-110*t),Math.round(55+30*t)];}
-      if(v<0.8){const t=(v-0.6)/0.2;return [Math.round(230-30*t),Math.round(90-70*t),Math.round(85+30*t)];}
-      const t=(v-0.8)/0.2;return [Math.round(200-60*t),Math.round(20+20*t),Math.round(115+50*t)];
-    }
-
-    // ── Texture canvas ──
-    const cvs=document.createElement('canvas');
-    cvs.width=nTraces; cvs.height=nDepth;
-    const ctx2=cvs.getContext('2d');
-    const imgData=ctx2.createImageData(nTraces,nDepth);
-    const buf=imgData.data;
-    for(let t=0;t<nTraces;t++){
-      for(let d=0;d<nDepth;d++){
-        const v=grid[t][d];
-        const [r2,g2,b2]=gprRGB(v);
-        const i=(d*nTraces+t)*4;
-        buf[i]=r2; buf[i+1]=g2; buf[i+2]=b2; buf[i+3]=255;
+    // ── Texture — cache'den al veya yenile ──
+    if(!gprTexCache){
+      const cvs=document.createElement('canvas');
+      cvs.width=nTraces; cvs.height=nDepth;
+      const ctx2=cvs.getContext('2d');
+      const imgData=ctx2.createImageData(nTraces,nDepth);
+      const buf=imgData.data;
+      for(let t=0;t<nTraces;t++){
+        for(let d=0;d<nDepth;d++){
+          const v=grid[t][d];
+          const [r2,g2,b2]=gprColorRGB(v);
+          const i=(d*nTraces+t)*4;
+          buf[i]=r2; buf[i+1]=g2; buf[i+2]=b2; buf[i+3]=255;
+        }
       }
+      ctx2.putImageData(imgData,0,0);
+      gprTexCache=new THREE.CanvasTexture(cvs);
     }
-    ctx2.putImageData(imgData,0,0);
-    const tex=new THREE.CanvasTexture(cvs);
+    const tex=gprTexCache;
 
     // ── Z derinlikli PlaneGeometry ──
-    // Her trace için ortalama amplitüd hesapla → Z offset
     const traceAvg=grid.map(row=>row.reduce((s,v)=>s+v,0)/row.length);
     const maxAvg=Math.max(...traceAvg)||1;
-
-    // Subdivided plane — her segment bir trace
-    const geo=new THREE.PlaneGeometry(W,D,nTraces-1,nDepth-1);
+    const geo=new THREE.PlaneGeometry(W,D,Math.min(nTraces-1,64),Math.min(nDepth-1,24));
     const pos=geo.attributes.position;
     for(let t=0;t<nTraces;t++){
       // Bu trace'in Z değeri = ortalama amplitüd × ZMAX
@@ -764,7 +754,8 @@ function toggleAuto(){autoRot=!autoRot;document.getElementById('autoBtn').textCo
 // GPR gamma değeri — slider tarafından kontrol edilir
 let gprGamma = 0.5;
 let gprZMax = 10;
-let gprPalette = 0; // 0=ERT, 1=thermal, 2=gray
+let gprPalette = 0;
+let gprTexCache = null; // texture cache
 
 function setupControlsForType() {
   if(isGPR()){
@@ -811,6 +802,7 @@ function toggleAnomalyOnly(){
     gprPalette=(gprPalette+1)%3;
     const labels=['ERT','Thermal','Gray'];
     document.getElementById('anomOnlyBtn').textContent='Palette: '+labels[gprPalette];
+    gprTexCache=null; // cache sıfırla — yeni palette ile yeniden oluştur
     draw2D(); drawPseudo(); drawPlan(); buildScene();
   } else {
     anomalyOnly=!anomalyOnly;
@@ -832,6 +824,7 @@ function updateDepth(v){
     gprGamma = 1.1 - parseFloat(v)*0.1;
     gprGamma = Math.max(0.1, Math.min(1.0, gprGamma));
     document.getElementById('depthVal').textContent = parseFloat(v).toFixed(1);
+    gprTexCache=null; // gamma değişti — texture yenile
     draw2D(); drawPseudo(); drawPlan(); buildScene();
   } else {
     depthMult=parseFloat(v);

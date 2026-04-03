@@ -324,8 +324,19 @@ function buildScene() {
     const nTraces=grid.length;
     const nDepth=grid[0]?grid[0].length:0;
     if(!nTraces||!nDepth)return;
-    const W=160, D=80;
-    // Canvas texture oluştur
+    const W=160, D=80, ZMAX=30; // ZMAX = Z ekseninde maks derinlik
+
+    // ── Renk yardımcı ──
+    function gprRGB(v){
+      if(v<0.15){const t=v/0.15;return [Math.round(10+20*t),Math.round(30+120*t),Math.round(95+160*t)];}
+      if(v<0.3){const t=(v-0.15)/0.15;return [Math.round(30+80*t),Math.round(150+100*t),Math.round(255-60*t)];}
+      if(v<0.45){const t=(v-0.3)/0.15;return [Math.round(110+160*t),Math.round(250-50*t),Math.round(195-140*t)];}
+      if(v<0.6){const t=(v-0.45)/0.15;return [Math.round(270-40*t),Math.round(200-110*t),Math.round(55+30*t)];}
+      if(v<0.8){const t=(v-0.6)/0.2;return [Math.round(230-30*t),Math.round(90-70*t),Math.round(85+30*t)];}
+      const t=(v-0.8)/0.2;return [Math.round(200-60*t),Math.round(20+20*t),Math.round(115+50*t)];
+    }
+
+    // ── Texture canvas ──
     const cvs=document.createElement('canvas');
     cvs.width=nTraces; cvs.height=nDepth;
     const ctx2=cvs.getContext('2d');
@@ -334,26 +345,40 @@ function buildScene() {
     for(let t=0;t<nTraces;t++){
       for(let d=0;d<nDepth;d++){
         const v=grid[t][d];
-        // ERT renk paleti — 0-1 arası
-        let r2,g2,b2;
-        if(v<0.15){const t2=v/0.15;r2=Math.round(10+20*t2);g2=Math.round(30+120*t2);b2=Math.round(95+160*t2);}
-        else if(v<0.3){const t2=(v-0.15)/0.15;r2=Math.round(30+80*t2);g2=Math.round(150+100*t2);b2=Math.round(255-60*t2);}
-        else if(v<0.45){const t2=(v-0.3)/0.15;r2=Math.round(110+160*t2);g2=Math.round(250-50*t2);b2=Math.round(195-140*t2);}
-        else if(v<0.6){const t2=(v-0.45)/0.15;r2=Math.round(270-40*t2);g2=Math.round(200-110*t2);b2=Math.round(55+30*t2);}
-        else if(v<0.8){const t2=(v-0.6)/0.2;r2=Math.round(230-30*t2);g2=Math.round(90-70*t2);b2=Math.round(85+30*t2);}
-        else{const t2=(v-0.8)/0.2;r2=Math.round(200-60*t2);g2=Math.round(20+20*t2);b2=Math.round(115+50*t2);}
+        const [r2,g2,b2]=gprRGB(v);
         const i=(d*nTraces+t)*4;
         buf[i]=r2; buf[i+1]=g2; buf[i+2]=b2; buf[i+3]=255;
       }
     }
     ctx2.putImageData(imgData,0,0);
     const tex=new THREE.CanvasTexture(cvs);
-    // Dikey düzlem — trace=X, derinlik=Y
-    const geo=new THREE.PlaneGeometry(W,D);
+
+    // ── Z derinlikli PlaneGeometry ──
+    // Her trace için ortalama amplitüd hesapla → Z offset
+    const traceAvg=grid.map(row=>row.reduce((s,v)=>s+v,0)/row.length);
+    const maxAvg=Math.max(...traceAvg)||1;
+
+    // Subdivided plane — her segment bir trace
+    const geo=new THREE.PlaneGeometry(W,D,nTraces-1,nDepth-1);
+    const pos=geo.attributes.position;
+    for(let t=0;t<nTraces;t++){
+      // Bu trace'in Z değeri = ortalama amplitüd × ZMAX
+      const zVal=(traceAvg[t]/maxAvg)*ZMAX;
+      for(let d=0;d<nDepth;d++){
+        const idx=d*nTraces+t;
+        if(idx<pos.count){
+          pos.setZ(idx, zVal*(1-d/nDepth)); // üstte tam, altta sıfır
+        }
+      }
+    }
+    pos.needsUpdate=true;
+    geo.computeVertexNormals();
+
     const mat=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide});
     const mesh=new THREE.Mesh(geo,mat);
-    mesh.position.set(0,-D/2,0); // ortala
+    mesh.position.set(0,-D/2,0);
     scene.add(mesh);
+
     // Yüzey çizgisi
     const surf=new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-W/2,0,0),new THREE.Vector3(W/2,0,0)]),
@@ -440,8 +465,9 @@ function gprColorCSS(v) {
 }
 
 function gprColorRGB(v) {
-  // ImageData için [r,g,b] döndür — ERT paleti
+  // Gamma correction ile kontrast artır — zayıf sinyaller daha görünür
   v=Math.max(0,Math.min(1,v));
+  v=Math.pow(v, 0.5); // gamma=0.5 → karanlık bölgeler aydınlanır
   if(v<0.15){const t=v/0.15;return [Math.round(10+20*t),Math.round(30+120*t),Math.round(95+160*t)];}
   if(v<0.3){const t=(v-0.15)/0.15;return [Math.round(30+80*t),Math.round(150+100*t),Math.round(255-60*t)];}
   if(v<0.45){const t=(v-0.3)/0.15;return [Math.round(110+160*t),Math.round(250-50*t),Math.round(195-140*t)];}

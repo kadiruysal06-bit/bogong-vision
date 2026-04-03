@@ -334,9 +334,16 @@ function buildScene() {
     for(let t=0;t<nTraces;t++){
       for(let d=0;d<nDepth;d++){
         const v=grid[t][d];
-        const c=resColor(v,0,1);
+        // ERT renk paleti — 0-1 arası
+        let r2,g2,b2;
+        if(v<0.15){const t2=v/0.15;r2=Math.round(10+20*t2);g2=Math.round(30+120*t2);b2=Math.round(95+160*t2);}
+        else if(v<0.3){const t2=(v-0.15)/0.15;r2=Math.round(30+80*t2);g2=Math.round(150+100*t2);b2=Math.round(255-60*t2);}
+        else if(v<0.45){const t2=(v-0.3)/0.15;r2=Math.round(110+160*t2);g2=Math.round(250-50*t2);b2=Math.round(195-140*t2);}
+        else if(v<0.6){const t2=(v-0.45)/0.15;r2=Math.round(270-40*t2);g2=Math.round(200-110*t2);b2=Math.round(55+30*t2);}
+        else if(v<0.8){const t2=(v-0.6)/0.2;r2=Math.round(230-30*t2);g2=Math.round(90-70*t2);b2=Math.round(85+30*t2);}
+        else{const t2=(v-0.8)/0.2;r2=Math.round(200-60*t2);g2=Math.round(20+20*t2);b2=Math.round(115+50*t2);}
         const i=(d*nTraces+t)*4;
-        buf[i]=Math.round(c.r*255); buf[i+1]=Math.round(c.g*255); buf[i+2]=Math.round(c.b*255); buf[i+3]=255;
+        buf[i]=r2; buf[i+1]=g2; buf[i+2]=b2; buf[i+3]=255;
       }
     }
     ctx2.putImageData(imgData,0,0);

@@ -324,6 +324,99 @@ function buildScene() {
   if(!DATA||!DATA.grid) return;
   const grid=DATA.grid;
   const isERT=DATA.type==='ERT_INV'||DATA.type==='ERT_DAT';
+
+  // ── SAF — gerçek 3D voksel küp ──
+  if(DATA.type==='GPR_SAF' && DATA.plan_slices){
+    const slices=DATA.plan_slices; // [depth][row][col]
+    const dl=slices.length;
+    const nRows=DATA.grid_rows||slices[0].length;
+    const nCols=DATA.grid_cols||slices[0][0].length;
+    const maxDepth=DATA.max_depth||11.5;
+    const dpl=DATA.depth_per_level||0.18;
+    const tsx=DATA.trace_spacing||1.0;
+    const tsy=DATA.row_spacing||1.0;
+
+    // Ölçek — görünüm için normalize et
+    const SCALE_XZ = 20; // her 1m = 20 birim
+    const SCALE_Y = 60;  // derinlik ekseni
+
+    const positions=[], colors=[];
+
+    for(let d=0; d<dl; d++){
+      const depth_m = d * dpl;
+      if(depth_m > gprZMax * (maxDepth/30)) continue; // Z slider filtresi
+      const slice=slices[d];
+      for(let r=0; r<nRows; r++){
+        for(let c=0; c<(nCols); c++){
+          const v = (slice[r]&&slice[r][c]!==undefined) ? slice[r][c] : 0;
+          if(v < 0.25) continue; // düşük değerleri atla — gürültü
+
+          const px = (c * tsx - (nCols-1)*tsx/2) * SCALE_XZ;
+          const py = -(depth_m / maxDepth) * SCALE_Y;
+          const pz = (r * tsy - (nRows-1)*tsy/2) * SCALE_XZ;
+
+          positions.push(px, py, pz);
+
+          // Renk — düşük=mavi, yüksek=kırmızı/sarı
+          const [rv,gv,bv] = gprColorRGB(v);
+          colors.push(rv/255, gv/255, bv/255);
+        }
+      }
+    }
+
+    if(positions.length > 0){
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      const mat = new THREE.PointsMaterial({
+        size: 6.0,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85,
+        sizeAttenuation: true
+      });
+      const points = new THREE.Points(geo, mat);
+      scene.add(points);
+    }
+
+    // Kutu çerçevesi — boyutlar
+    const W = (nCols-1) * tsx * SCALE_XZ;
+    const H = SCALE_Y;
+    const D2 = (nRows-1) * tsy * SCALE_XZ;
+    const boxGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(W, H, D2));
+    const boxMat = new THREE.LineBasicMaterial({color:0xc8a96e, transparent:true, opacity:0.3});
+    const box = new THREE.LineSegments(boxGeo, boxMat);
+    box.position.set(0, -H/2, 0);
+    scene.add(box);
+
+    // Anomali işaretleri — 3D'de küre
+    if(DATA.anomalies) DATA.anomalies.forEach(a=>{
+      if(a.x_m===undefined||a.y_m===undefined||a.depth_m===undefined) return;
+      const px = (a.x_m - (nCols-1)*tsx/2) * SCALE_XZ;
+      const py = -(a.depth_m / maxDepth) * SCALE_Y;
+      const pz = (a.y_m - (nRows-1)*tsy/2) * SCALE_XZ;
+      const color = a.severity==='HIGH' ? 0xe05555 : 0xe07a35;
+      const sGeo = new THREE.SphereGeometry(3, 8, 8);
+      const sMat = new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.8, wireframe:true});
+      const sphere = new THREE.Mesh(sGeo, sMat);
+      sphere.position.set(px, py, pz);
+      scene.add(sphere);
+    });
+
+    // Yüzey çizgisi
+    const surf = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-W/2,0,-D2/2), new THREE.Vector3(W/2,0,-D2/2),
+        new THREE.Vector3(W/2,0,D2/2), new THREE.Vector3(-W/2,0,D2/2),
+        new THREE.Vector3(-W/2,0,-D2/2)
+      ]),
+      new THREE.LineBasicMaterial({color:0xc8a96e, transparent:true, opacity:0.6})
+    );
+    scene.add(surf);
+    return;
+  }
+
+  // ── GPR SGY/RD3 — mevcut PlaneGeometry ──
   if(!isERT){
     const nTraces=grid.length;
     const nDepth=grid[0]?grid[0].length:0;

@@ -240,7 +240,7 @@ function initViewer() {
     document.querySelector('#panel3d .panel-label').textContent='3D GPR Point Cloud';
     document.querySelector('#panel2d .panel-label').textContent='2D Radargram Section';
     document.querySelector('#panelPs .panel-label').textContent='Depth Profile Traces';
-    document.querySelector('#panelPlan .panel-label').textContent='Depth Slice — Mid Sample';
+    document.querySelector('#panelPlan .panel-label').textContent=DATA.type==='GPR_SAF'?'Plan View — Depth Heatmap':'Depth Slice — Mid Sample';
   } else {
     document.querySelector('#panel3d .panel-label').textContent='3D Resistivity Model';
     document.querySelector('#panel2d .panel-label').textContent='2D Inverse Model Section';
@@ -658,17 +658,76 @@ function drawPseudo() {
 }
 
 function drawPlan() {
-  // Plan view = horizontal slice at a chosen depth (~4m = layer 3)
   const canvas=document.getElementById('canvasPlan');
   const ctx=canvas.getContext('2d');
   const W=canvas.width=canvas.clientWidth, H=canvas.height=canvas.clientHeight;
   ctx.fillStyle='#080810'; ctx.fillRect(0,0,W,H);
   if(!DATA||!DATA.grid) return;
+
+  // SAF — gerçek 2D plan haritası
+  if(DATA.type==='GPR_SAF' && DATA.plan_slices && DATA.plan_slices.length){
+    const slices=DATA.plan_slices;
+    const dl=slices.length;
+    const nRows=slices[0].length;
+    const nCols=slices[0][0]?slices[0][0].length:1;
+    const PAD=40, pW=Math.max(1,W-PAD*2), pH=Math.max(1,H-PAD*2);
+
+    // Aktif derinlik — thresh slider ile kontrol (0-dl)
+    const depthIdx=Math.min(dl-1, Math.floor((gprZMax/30)*dl));
+    const slice=slices[depthIdx];
+
+    // ImageData ile çiz — her hücre eşit boyut
+    const cellW=pW/nCols, cellH=pH/nRows;
+    for(let r=0;r<nRows;r++){
+      for(let c=0;c<nCols;c++){
+        const v=(slice[r]&&slice[r][c]!==undefined)?slice[r][c]:0;
+        const [rv,gv,bv]=gprColorRGB(v);
+        ctx.fillStyle=`rgb(${rv},${gv},${bv})`;
+        ctx.fillRect(PAD+c*cellW, PAD+r*cellH, cellW, cellH);
+        // Hücre sınırları
+        ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=0.5;
+        ctx.strokeRect(PAD+c*cellW, PAD+r*cellH, cellW, cellH);
+      }
+    }
+
+    // Grid koordinat etiketleri
+    ctx.fillStyle='rgba(232,228,220,0.5)'; ctx.font='8px JetBrains Mono'; ctx.textAlign='center';
+    const tsx=DATA.trace_spacing||1;
+    for(let c=0;c<=nCols;c++){
+      ctx.fillText((c*tsx).toFixed(0)+'m', PAD+c*cellW, PAD-6);
+    }
+    ctx.textAlign='right';
+    const tsy=DATA.row_spacing||1;
+    for(let r=0;r<=nRows;r++){
+      ctx.fillText((r*tsy).toFixed(0)+'m', PAD-4, PAD+r*cellH+4);
+    }
+
+    // Anomali noktaları
+    if(DATA.anomalies) DATA.anomalies.forEach(a=>{
+      if(a.depth_idx===undefined||Math.abs(a.depth_idx-depthIdx)>3) return;
+      const px=PAD+(a.trace_idx+0.5)*cellW;
+      const py=PAD+((a.row_idx||0)+0.5)*cellH;
+      const color=a.severity==='HIGH'?'#e05555':'#e07a35';
+      ctx.strokeStyle=color; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(px,py,Math.min(cellW,cellH)*0.35,0,Math.PI*2); ctx.stroke();
+    });
+
+    // Derinlik bilgisi
+    const depthM=(depthIdx*(DATA.depth_per_level||0)).toFixed(2);
+    ctx.fillStyle='rgba(200,169,110,0.8)'; ctx.font='8px JetBrains Mono'; ctx.textAlign='left';
+    ctx.fillText(`Plan view — Depth: ${depthM}m  (Z-slider ile değiştir)`, PAD, H-8);
+    ctx.strokeStyle='rgba(200,169,110,0.3)'; ctx.lineWidth=0.5;
+    ctx.strokeRect(PAD,PAD,pW,pH);
+
+    // Panel etiketi güncelle
+    document.querySelector('#panelPlan .panel-label').textContent=`Plan — ${depthM}m derinlik`;
+    return;
+  }
+
   if(isGPR()){
     const grid=DATA.grid;
     const nTraces=grid.length, nDepth=grid[0]?grid[0].length:0;
     if(!nTraces||!nDepth)return;
-    // Tüm alanı tek ImageData ile doldur — her satır bir derinlik dilimi
     const PAD=32, pW=Math.max(1,W-PAD*2), pH=Math.max(1,H-PAD*2);
     const slices=[0,Math.floor(nDepth*0.2),Math.floor(nDepth*0.4),Math.floor(nDepth*0.6),Math.floor(nDepth*0.8)];
     const nSlices=slices.length;

@@ -535,13 +535,13 @@ function buildScene() {
     const g=new THREE.BufferGeometry();
     g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
     g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
-    scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:2.2,vertexColors:true,transparent:true,opacity:0.95,sizeAttenuation:true})));
+    (window.sceneGroup||scene).add(new THREE.Points(g,new THREE.PointsMaterial({size:2.2,vertexColors:true,transparent:true,opacity:0.95,sizeAttenuation:true})));
   }
   if(!anomalyOnly&&bPos.length){
     const bg=new THREE.BufferGeometry();
     bg.setAttribute('position',new THREE.Float32BufferAttribute(bPos,3));
     bg.setAttribute('color',new THREE.Float32BufferAttribute(bCol,3));
-    scene.add(new THREE.Points(bg,new THREE.PointsMaterial({size:1.5,vertexColors:true,transparent:true,opacity:0.75,sizeAttenuation:true})));
+    (window.sceneGroup||scene).add(new THREE.Points(bg,new THREE.PointsMaterial({size:1.5,vertexColors:true,transparent:true,opacity:0.75,sizeAttenuation:true})));
   }
   // Surface line
   const surf=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-W/2,0,0),new THREE.Vector3(W/2,0,0)]),new THREE.LineBasicMaterial({color:0xc8a96e,transparent:true,opacity:0.4}));

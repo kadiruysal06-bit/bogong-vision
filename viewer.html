@@ -397,15 +397,15 @@ function buildScene() {
     const nCellsY = nRows - 1;  // 3 hücre
 
     function getVal(r, c) {
-      // Eksik noktayı komşulardan tahmin et
-      if(slice[r]&&slice[r][c]!==undefined) return slice[r][c];
-      // Komşu değerlerin ortalaması
-      const neighbors = [];
-      [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
-        const nr=r+dr, nc=c+dc;
-        if(slice[nr]&&slice[nr][nc]!==undefined) neighbors.push(slice[nr][nc]);
-      });
-      return neighbors.length ? neighbors.reduce((a,b)=>a+b)/neighbors.length : 0;
+      // Direkt değer varsa kullan
+      if(slice[r]&&slice[r][c]!==undefined && slice[r][c] > 0) return slice[r][c];
+      // Aynı sütun, bir önceki satır
+      if(r > 0 && slice[r-1]&&slice[r-1][c]!==undefined) return slice[r-1][c];
+      // Aynı satır, bir önceki sütun
+      if(c > 0 && slice[r]&&slice[r][c-1]!==undefined) return slice[r][c-1];
+      // Diagonal
+      if(r > 0 && c > 0 && slice[r-1]&&slice[r-1][c-1]!==undefined) return slice[r-1][c-1];
+      return 0;
     }
     function cellValue(row, col) {
       const v00=getVal(row,col);

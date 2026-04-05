@@ -347,25 +347,32 @@ function buildScene() {
 
     const positions=[], colors=[];
 
-    for(let d=1; d<dl; d++){
-      const depth_m = d * dpl;
-      if(depth_m > maxDepthShow) continue;
-      const slice=slices[d];
-
-      for(let r=0; r<nRows; r++){
-        for(let c=0; c<nCols; c++){
+    // Peak-only rendering — her (row,col) için sadece en güçlü derinliği çiz
+    for(let r=0; r<nRows; r++){
+      for(let c=0; c<nCols; c++){
+        // Bu noktadaki tüm derinlikleri topla
+        let peakV = 0, peakD = 0;
+        for(let d=2; d<dl; d++){
+          const depth_m = d * dpl;
+          if(depth_m > maxDepthShow) break;
+          const slice=slices[d];
           const v = (slice[r]&&slice[r][c]!==undefined) ? slice[r][c] : 0;
+          if(v > peakV){ peakV = v; peakD = d; }
+        }
+        if(peakV < 0.15) continue;
 
-          // Eşik — sadece anlamlı değerleri göster
-          if(v < 0.20) continue;
+        // Sadece peak etrafında ±2 level göster
+        for(let d=Math.max(2,peakD-2); d<=Math.min(dl-1,peakD+2); d++){
+          const depth_m = d * dpl;
+          const slice=slices[d];
+          const v = (slice[r]&&slice[r][c]!==undefined) ? slice[r][c] : 0;
+          if(v < 0.10) continue;
 
           const px = (c * tsx - (nCols-1)*tsx/2) * SCALE_XZ;
           const py = -(depth_m / maxDepth) * SCALE_Y;
           const pz = (r * tsy - (nRows-1)*tsy/2) * SCALE_XZ;
-
           positions.push(px, py, pz);
 
-          // Renk
           const vScaled = Math.min(1, v / 0.9);
           const [rv,gv,bv] = gprColorRGB(vScaled);
           colors.push(rv/255, gv/255, bv/255);

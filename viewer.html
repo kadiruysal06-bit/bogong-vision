@@ -263,6 +263,19 @@ function updateInfoPanel() {
   document.getElementById('infoPoints').textContent = (DATA.points||DATA.traces||0).toLocaleString();
   document.getElementById('infoMin').textContent = DATA.min_res?DATA.min_res.toFixed(1):'—';
   document.getElementById('infoMax').textContent = DATA.max_res?Math.round(DATA.max_res).toLocaleString():'—';
+
+  // SAF için özel legend
+  if(DATA.type==='GPR_SAF'){
+    document.getElementById('cbar-gradient').style.background=
+      'linear-gradient(to right,#1464b4,#1e90c8,#3cb87a,#e8d44d,#f08030,#cc2020)';
+    document.getElementById('cbar-labels').innerHTML=
+      '<span>Su/Kil</span><span>Toprak</span><span>Kaya</span><span>Metal</span>';
+  } else {
+    document.getElementById('cbar-gradient').style.background=
+      'linear-gradient(to right,#0a1f5e,#1565c0,#29b6f6,#80cbc4,#a5d6a7,#fff176,#ffb74d,#ef5350,#b71c1c)';
+    document.getElementById('cbar-labels').innerHTML=
+      '<span>Low (water/clay)</span><span>Medium</span><span>High (void/rock)</span>';
+  }
 }
 
 function updateAnomalyList() {
@@ -383,13 +396,24 @@ function buildScene() {
     const nCellsX = nCols - 1;  // 3 hücre
     const nCellsY = nRows - 1;  // 3 hücre
 
+    function getVal(r, c) {
+      // Eksik noktayı komşulardan tahmin et
+      if(slice[r]&&slice[r][c]!==undefined) return slice[r][c];
+      // Komşu değerlerin ortalaması
+      const neighbors = [];
+      [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
+        const nr=r+dr, nc=c+dc;
+        if(slice[nr]&&slice[nr][nc]!==undefined) neighbors.push(slice[nr][nc]);
+      });
+      return neighbors.length ? neighbors.reduce((a,b)=>a+b)/neighbors.length : 0;
+    }
     function cellValue(row, col) {
-      // 4 köşe vuruşunun ortalaması
-      const v00=(slice[row]&&slice[row][col]!==undefined)?slice[row][col]:0;
-      const v10=(slice[row+1]&&slice[row+1][col]!==undefined)?slice[row+1][col]:0;
-      const v01=(slice[row]&&slice[row][col+1]!==undefined)?slice[row][col+1]:0;
-      const v11=(slice[row+1]&&slice[row+1][col+1]!==undefined)?slice[row+1][col+1]:0;
-      return (v00+v10+v01+v11)/4;
+      const v00=getVal(row,col);
+      const v10=getVal(row+1,col);
+      const v01=getVal(row,col+1);
+      const v11=getVal(row+1,col+1);
+      const vals=[v00,v10,v01,v11].filter(v=>v>0);
+      return vals.length ? vals.reduce((a,b)=>a+b)/vals.length : 0;
     }
 
     function bilinear(ry, cx){
@@ -409,7 +433,7 @@ function buildScene() {
         const ry=(py/cvs.height)*(nCellsY||1);
         const cx=(px/cvs.width)*(nCellsX||1);
         const v=bilinear(ry,cx);
-        const [rv,gv,bv]=gprColorRGB(Math.min(1,v/0.85));
+        const [rv,gv,bv]=safColorRGB(Math.min(1,v/0.85));
         const i=(py*cvs.width+px)*4;
         buf[i]=rv; buf[i+1]=gv; buf[i+2]=bv; buf[i+3]=200;
       }
@@ -607,6 +631,31 @@ function resColorCSS(v) {
 function gprColorCSS(v) {
   // ERT ile aynı palet: koyu mavi → cyan → yeşil → sarı → turuncu → kırmızı
   return resColorCSS(v);
+}
+
+// SAF — özel renk paleti (herkes anlasın)
+// Mavi=Su/Kil → Yeşil=Toprak → Sarı=Kaya → Turuncu=Yoğun → Kırmızı=Metal
+function safColorRGB(v) {
+  v = Math.max(0, Math.min(1, v));
+  if(v < 0.20){ // Mavi — su/kil
+    const t = v / 0.20;
+    return [Math.round(20+t*20), Math.round(60+t*80), Math.round(180+t*60)];
+  }
+  if(v < 0.40){ // Mavi→Yeşil — nemli toprak
+    const t = (v-0.20) / 0.20;
+    return [Math.round(40+t*20), Math.round(140+t*100), Math.round(240-t*180)];
+  }
+  if(v < 0.60){ // Yeşil→Sarı — kaya/sert zemin
+    const t = (v-0.40) / 0.20;
+    return [Math.round(60+t*195), Math.round(240-t*30), Math.round(60-t*40)];
+  }
+  if(v < 0.80){ // Sarı→Turuncu — yoğun yapı
+    const t = (v-0.60) / 0.20;
+    return [255, Math.round(210-t*130), Math.round(20-t*10)];
+  }
+  // Turuncu→Kırmızı — metal/çok yoğun
+  const t = (v-0.80) / 0.20;
+  return [255, Math.round(80-t*70), Math.round(10)];
 }
 
 function gprColorRGB(v) {
